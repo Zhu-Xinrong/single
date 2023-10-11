@@ -4,6 +4,7 @@
 
 内容一览：<br>
 资源监视器 - ResourceMonitorPublic.py - Python<br>
+哔哩哔哩信息查询 - BilibiliInfomationRequest(GUI/Command).py - Python<br>
 屏保 - ScreenSaverPublic.e - 易语言
 
-更新于 2023年10月5日 星期四 八月廿一
+更新于 2023年10月11日 星期三 八月廿七
