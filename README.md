@@ -3,8 +3,9 @@
 以 .e 结尾的是易语言源码，密码统一为 KendallPublic.
 
 内容一览：<br>
-资源监视器 - ResourceMonitorPublic.py - Python<br>
-哔哩哔哩信息查询 - BilibiliInfomationRequest(GUI/Command).py - Python<br>
-屏保 - ScreenSaverPublic.e - 易语言
+资源监视器 - ResourceMonitorPublic.py - Python - 更新已停止<br>
+哔哩哔哩信息查询 - BilibiliInfomationRequest.py - Python - 继续维护<br>
+屏保 - ScreenSaverPublic.e - 易语言 - 更新已停止，改名为"Clock"<br>
+时钟 - ClockPublic.e - 易语言 - 继续维护<br>
 
-更新于 2023年10月11日 星期三 八月廿七
+更新于 2023年11月11日 星期六 九月廿八
