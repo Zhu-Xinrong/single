@@ -43,12 +43,10 @@ int main(){
                 case '0':{
                     MouseEvent(MOUSEEVENTF_LEFTDOWN|MOUSEEVENTF_LEFTUP,0,0,0,0);
                     break;
-                }
-                case '1':{
+                }case '1':{
                     MouseEvent(MOUSEEVENTF_RIGHTDOWN|MOUSEEVENTF_RIGHTUP,0,0,0,0);
                     break;
-                }
-                case '2':{
+                }case '2':{
                     MouseEvent(MOUSEEVENTF_MIDDLEDOWN|MOUSEEVENTF_MIDDLEUP,0,0,0,0);
                     break;
                 }
