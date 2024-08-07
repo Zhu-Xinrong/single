@@ -6,7 +6,7 @@ int main(){
     while(true){
         int click{};
 		DWORD sleepTime{};
-		char key[2]={};
+		char key[2]{};
         printf("输入点击次数: ");
         while(true){
             scanf("%d",&click);
