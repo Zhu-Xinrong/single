@@ -20,7 +20,7 @@ int main(){
             if(sleepTime>0){
 				break;
             }
-			printf("数据必须大于 0, 请重新输入: ");
+			printf("输入数据必须大于 0, 请重新输入: ");
 		}
         printf("按下左键 (0), 右键 (1) 还是中键 (2): ");
 		while(true){
