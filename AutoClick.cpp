@@ -41,11 +41,11 @@ class CAutoClick{
         }
 };
 auto main()->int{
+    CAutoClick c;
+    int click{};
+	DWORD sleepTime{};
+	char button[2]{};
     while(true){
-        CAutoClick c;
-        int click{};
-		DWORD sleepTime{};
-		char button[2]{};
         printf("输入点击次数: ");
         while(true){
             scanf("%d",&click);
