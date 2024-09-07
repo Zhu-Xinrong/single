@@ -1,7 +1,6 @@
 ﻿#define _CRT_SECURE_NO_WARNINGS
 #include<stdio.h>
-#include<Windows.h>
-#define MouseEvent mouse_event
+#include<windows.h>
 int main(){
     while(true){
         int click{};
@@ -26,7 +25,7 @@ int main(){
         printf("按下左键 (0), 右键 (1) 还是中键 (2): ");
 		while(true){
             scanf("%s",key);
-            if((!(key[0]^'0')||!(key[0]^'1')||!(key[0]^'2'))&&!(key[1]^0)){
+            if(((key[0]=='0')||(key[0]=='1')||(key[0]=='2'))&&(key[1]==0)){
 				break;
             }
             printf("输入错误, 请重新输入: ");
@@ -36,18 +35,18 @@ int main(){
             if(!i){
                 break;
             }
-            Sleep(1000ul);
+            Sleep(1000);
         }
         for(int i{};i<click;++i){
             switch(key[0]){
                 case '0':{
-                    MouseEvent(MOUSEEVENTF_LEFTDOWN|MOUSEEVENTF_LEFTUP,0,0,0,0);
+                    mouse_event(MOUSEEVENTF_LEFTDOWN|MOUSEEVENTF_LEFTUP,0,0,0,0);
                     break;
                 }case '1':{
-                    MouseEvent(MOUSEEVENTF_RIGHTDOWN|MOUSEEVENTF_RIGHTUP,0,0,0,0);
+                    mouse_event(MOUSEEVENTF_RIGHTDOWN|MOUSEEVENTF_RIGHTUP,0,0,0,0);
                     break;
                 }case '2':{
-                    MouseEvent(MOUSEEVENTF_MIDDLEDOWN|MOUSEEVENTF_MIDDLEUP,0,0,0,0);
+                    mouse_event(MOUSEEVENTF_MIDDLEDOWN|MOUSEEVENTF_MIDDLEUP,0,0,0,0);
                     break;
                 }
             }
