@@ -95,7 +95,7 @@ auto main() -> int
             std::print( "请在 {} 秒内将鼠标移动到指定位置.\r", i );
             cpp_utils::perf_sleep( 1s );
         }
-        std::println( "开始执行." );
+        std::print( "\n开始执行." );
         clicker.run();
         return cpp_utils::console_value::ui_back;
     } };
