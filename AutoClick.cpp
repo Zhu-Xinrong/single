@@ -105,7 +105,7 @@ auto main() -> int
         std::print( "按下左键 (L), 中键 (M), 还是右键 (R): " );
         while ( true ) {
             std::scanf( "%s", button );
-            if ( ( ( button[ 0 ] == 'L' ) || ( button[ 0 ] == 'M' ) || ( button[ 0 ] == 'R' ) ) && ( button[ 1 ] == 0 ) ) {
+            if ( ( button[ 0 ] == 'L' || button[ 0 ] == 'M' || button[ 0 ] == 'R' ) && ( button[ 1 ] == '\0' ) ) {
                 break;
             }
             std::print( "输入错误, 请重新输入: " );
