@@ -67,7 +67,7 @@ auto main() -> int
                 return;
             }
         }
-        _arg.parent_ui.add_back( " > 执行 ", execute );
+        _arg.parent_ui.remove( 1, 2 ).add_back( " > 执行 ", execute );
     } };
     auto set_click_num{ [ & ]( cpp_utils::console_ui_ansi::func_args _arg )
     {
