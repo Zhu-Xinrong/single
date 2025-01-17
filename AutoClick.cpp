@@ -1,12 +1,10 @@
 ﻿#define _CRT_SECURE_NO_WARNINGS
-#include <windows.h>
-#include <print>
 #include "cpp_utils.hpp"
 class auto_click final {
   private:
     char button_{};
     int click_{}, counter_{};
-    DWORD sleep_time_{};
+    std::chrono::milliseconds sleep_time_{};
     auto execute_()
     {
         switch ( button_ ) {
@@ -27,7 +25,7 @@ class auto_click final {
   public:
     auto_click()  = default;
     ~auto_click() = default;
-    auto set( char _button, int _click, DWORD _sleep_time )
+    auto set( char _button, int _click, std::chrono::milliseconds _sleep_time )
     {
         this->button_     = _button;
         this->click_      = _click;
@@ -37,15 +35,16 @@ class auto_click final {
     {
         for ( ; counter_ < click_; ++counter_ ) {
             execute_();
-            Sleep( sleep_time_ );
+            cpp_utils::perf_sleep( sleep_time_ );
         }
     }
 };
 auto main() -> int
 {
+    using namespace std::chrono_literals;
     cpp_utils::console_ui_ansi ui;
     auto_click clicker;
-    DWORD sleepTime{};
+    std::chrono::milliseconds sleep_time{};
     int click{};
     char button[ 2 ]{};
     auto set_click_num{ [ & ]( cpp_utils::console_ui_ansi::func_args _arg )
@@ -66,8 +65,10 @@ auto main() -> int
         _arg.parent_ui.lock( false, true );
         std::print( "输入间隔时间 (单位: 毫秒): " );
         while ( true ) {
-            std::scanf( "%lu", &sleepTime );
-            if ( sleepTime > 0 ) {
+            uint64_t tmp;
+            std::scanf( "%Lu", &tmp );
+            if ( tmp > 0 ) {
+                sleep_time = std::chrono::milliseconds{ tmp };
                 break;
             }
             std::print( "输入数据必须大于 0, 请重新输入: " );
@@ -89,10 +90,10 @@ auto main() -> int
     } };
     auto execute{ [ & ]( cpp_utils::console_ui_ansi::func_args _arg )
     {
-        clicker.set( button[ 0 ], click, sleepTime );
+        clicker.set( button[ 0 ], click, sleep_time );
         for ( short i{ 5 }; i >= 0; --i ) {
             std::print( "请在 {} 秒内将鼠标移动到指定位置.\r", i );
-            Sleep( 1000 );
+            cpp_utils::perf_sleep( 1s );
         }
         std::println( "开始执行." );
         clicker.run();
