@@ -1,15 +1,14 @@
 ﻿#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <windows.h>
-class CAutoClick {
+class auto_click final {
   private:
-    char button;
-    int click, counter;
-    DWORD sleepTime;
-  protected:
-    auto clickBase()
+    char button_{};
+    int click_{}, counter_{};
+    DWORD sleep_time_{};
+    auto execute_()
     {
-        switch ( button ) {
+        switch ( button_ ) {
             case 'L' : {
                 mouse_event( MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0 );
                 break;
@@ -25,33 +24,25 @@ class CAutoClick {
         }
     }
   public:
-    CAutoClick()
-      : button{}
-      , click{}
-      , counter{ 1 }
-      , sleepTime{}
-    { }
-    ~CAutoClick() { }
-    auto set( char button, int click, DWORD sleepTime )
+    auto_click()  = default;
+    ~auto_click() = default;
+    auto set( char _button, int _click, DWORD _sleep_time )
     {
-        this->button    = button;
-        this->click     = click;
-        this->sleepTime = sleepTime;
+        this->button_     = _button;
+        this->click_      = _click;
+        this->sleep_time_ = _sleep_time;
     }
     auto run()
     {
-        for ( ; counter <= click; ++counter ) {
-            clickBase();
-            if ( counter == click ) {
-                break;
-            }
-            Sleep( sleepTime );
+        for ( ; counter_ < click_; ++counter_ ) {
+            execute_();
+            Sleep( sleep_time_ );
         }
     }
 };
 auto main() -> int
 {
-    CAutoClick c;
+    auto_click clicker;
     int click{};
     DWORD sleepTime{};
     char button[ 2 ]{};
@@ -88,9 +79,9 @@ auto main() -> int
             Sleep( 1000 );
         }
         puts( "\n正在应用配置." );
-        c.set( button[ 0 ], click, sleepTime );
+        clicker.set( button[ 0 ], click, sleepTime );
         puts( "开始执行." );
-        c.run();
+        clicker.run();
         puts( "执行完毕.\n" );
     }
     return 0;
