@@ -1,6 +1,6 @@
 ﻿#define _CRT_SECURE_NO_WARNINGS
-#include <stdio.h>
 #include <windows.h>
+#include <print>
 class auto_click final {
   private:
     char button_{};
@@ -47,32 +47,32 @@ auto main() -> int
     DWORD sleepTime{};
     char button[ 2 ]{};
     while ( true ) {
-        printf( "输入点击次数: " );
+        std::print( "输入点击次数: " );
         while ( true ) {
-            scanf( "%d", &click );
+            std::scanf( "%d", &click );
             if ( click > 0 ) {
                 break;
             }
-            printf( "数据必须大于 0, 请重新输入: " );
+            std::print( "数据必须大于 0, 请重新输入: " );
         }
-        printf( "输入间隔时间 (单位: 毫秒): " );
+        std::print( "输入间隔时间 (单位: 毫秒): " );
         while ( true ) {
-            scanf( "%lu", &sleepTime );
+            std::scanf( "%lu", &sleepTime );
             if ( sleepTime > 0 ) {
                 break;
             }
-            printf( "输入数据必须大于 0, 请重新输入: " );
+            std::print( "输入数据必须大于 0, 请重新输入: " );
         }
-        printf( "按下左键 (L), 中键 (M), 还是右键 (R): " );
+        std::print( "按下左键 (L), 中键 (M), 还是右键 (R): " );
         while ( true ) {
-            scanf( "%s", button );
+            std::scanf( "%s", button );
             if ( ( ( button[ 0 ] == 'L' ) || ( button[ 0 ] == 'M' ) || ( button[ 0 ] == 'R' ) ) && ( button[ 1 ] == 0 ) ) {
                 break;
             }
-            printf( "输入错误, 请重新输入: " );
+            std::print( "输入错误, 请重新输入: " );
         }
         for ( short i{ 5 }; i >= 0; --i ) {
-            printf( "请在 %d 秒内将鼠标移动到指定位置.\r", i );
+            std::print( "请在 %d 秒内将鼠标移动到指定位置.\r", i );
             if ( !i ) {
                 break;
             }
