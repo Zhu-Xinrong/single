@@ -47,6 +47,28 @@ auto main() -> int
     std::chrono::milliseconds sleep_time{};
     int click{};
     char button[ 2 ]{};
+    bool is_configed[ 3 ]{};
+    auto execute{ [ & ]( cpp_utils::console_ui_ansi::func_args _arg )
+    {
+        clicker.set( button[ 0 ], click, sleep_time );
+        for ( short i{ 5 }; i >= 0; --i ) {
+            std::print( "请在 {} 秒内将鼠标移动到指定位置.\r", i );
+            cpp_utils::perf_sleep( 1s );
+        }
+        std::print( "\n开始执行." );
+        clicker.run();
+        return cpp_utils::console_value::ui_back;
+    } };
+    auto check{ [ & ]( bool &_src, cpp_utils::console_ui_ansi::func_args &_arg )
+    {
+        _src = true;
+        for ( const auto &i : is_configed ) {
+            if ( i == false ) {
+                return;
+            }
+        }
+        _arg.parent_ui.add_back( " > 执行 ", execute );
+    } };
     auto set_click_num{ [ & ]( cpp_utils::console_ui_ansi::func_args _arg )
     {
         _arg.parent_ui.lock( false, true );
@@ -58,6 +80,7 @@ auto main() -> int
             }
             std::print( "数据必须大于 0, 请重新输入: " );
         }
+        check( is_configed[ 0 ], _arg );
         return cpp_utils::console_value::ui_back;
     } };
     auto set_sleep_time{ [ & ]( cpp_utils::console_ui_ansi::func_args _arg )
@@ -73,6 +96,7 @@ auto main() -> int
             }
             std::print( "输入数据必须大于 0, 请重新输入: " );
         }
+        check( is_configed[ 1 ], _arg );
         return cpp_utils::console_value::ui_back;
     } };
     auto set_button{ [ & ]( cpp_utils::console_ui_ansi::func_args _arg )
@@ -86,17 +110,7 @@ auto main() -> int
             }
             std::print( "输入错误, 请重新输入: " );
         }
-        return cpp_utils::console_value::ui_back;
-    } };
-    auto execute{ [ & ]( cpp_utils::console_ui_ansi::func_args _arg )
-    {
-        clicker.set( button[ 0 ], click, sleep_time );
-        for ( short i{ 5 }; i >= 0; --i ) {
-            std::print( "请在 {} 秒内将鼠标移动到指定位置.\r", i );
-            cpp_utils::perf_sleep( 1s );
-        }
-        std::print( "\n开始执行." );
-        clicker.run();
+        check( is_configed[ 2 ], _arg );
         return cpp_utils::console_value::ui_back;
     } };
     ui.add_back( std::format( "{}Auto Clicker\n\n", std::string( 19, ' ' ) ) )
@@ -106,7 +120,6 @@ auto main() -> int
       .add_back( " > 设置点击次数 ", set_click_num )
       .add_back( " > 设置点击间隔时间 ", set_sleep_time )
       .add_back( " > 设置点击键 ", set_button )
-      .add_back( " > 执行 ", execute )
       .set_console( "Auto Clicker", 54936, 50, 25, true, true, true, 255 )
       .show();
     return 0;
