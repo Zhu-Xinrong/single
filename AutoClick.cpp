@@ -116,7 +116,7 @@ auto main() -> int
     ui.add_back( std::format( "{}Auto Clicker\n\n", std::string( 19, ' ' ) ) )
       .add_back( " (i) 全部设置后即可执行.\n" )
       .add_back(
-        " < 退出 ", []( cpp_utils::console_ui_ansi::func_args ) { return cpp_utils::console_value::ui_exit; },
+        " < 退出 ", []( cpp_utils::console_ui_ansi::func_args ) { return cpp_utils::console_value::ui_quit; },
         cpp_utils::console_value::text_foreground_red | cpp_utils::console_value::text_foreground_intensity )
       .add_back( " > 设置点击次数 ", set_click_num )
       .add_back( " > 设置点击间隔时间 ", set_sleep_time )
