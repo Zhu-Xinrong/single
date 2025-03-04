@@ -43,8 +43,8 @@ constexpr std::chrono::seconds one_seconds{ 1 };
 auto_click clicker;
 std::chrono::milliseconds sleep_time{};
 int click{};
+short config_cnt{};
 char button[ 2 ]{};
-bool is_configed[ 3 ]{};
 auto execute( cpp_utils::console_ui::func_args )
 {
     clicker.set( button[ 0 ], click, sleep_time );
@@ -56,15 +56,12 @@ auto execute( cpp_utils::console_ui::func_args )
     clicker.run();
     return cpp_utils::console_ui::back;
 }
-auto check( bool &_src, cpp_utils::console_ui::func_args &_arg )
+auto check( cpp_utils::console_ui::func_args &_arg )
 {
-    _src = true;
-    for ( const auto &i : is_configed ) {
-        if ( i == false ) {
-            return;
-        }
+    ++config_cnt;
+    if ( config_cnt == 3 ) {
+        _arg.parent_ui.remove( 1, 2 ).add_back( " > 执行 ", execute );
     }
-    _arg.parent_ui.remove( 1, 2 ).add_back( " > 执行 ", execute );
 }
 auto set_click_num( cpp_utils::console_ui::func_args _arg )
 {
@@ -77,7 +74,7 @@ auto set_click_num( cpp_utils::console_ui::func_args _arg )
         }
         std::print( "数据必须大于 0, 请重新输入: " );
     }
-    check( is_configed[ 0 ], _arg );
+    check( _arg );
     return cpp_utils::console_ui::back;
 }
 auto set_sleep_time( cpp_utils::console_ui::func_args _arg )
@@ -93,7 +90,7 @@ auto set_sleep_time( cpp_utils::console_ui::func_args _arg )
         }
         std::print( "请输入数据必须大于 0, 请重新输入: " );
     }
-    check( is_configed[ 1 ], _arg );
+    check( _arg );
     return cpp_utils::console_ui::back;
 }
 auto set_button( cpp_utils::console_ui::func_args _arg )
@@ -107,7 +104,7 @@ auto set_button( cpp_utils::console_ui::func_args _arg )
         }
         std::print( "请输入错误, 请重新输入: " );
     }
-    check( is_configed[ 2 ], _arg );
+    check( _arg );
     return cpp_utils::console_ui::back;
 }
 auto main() -> int
