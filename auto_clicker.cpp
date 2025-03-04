@@ -3,7 +3,8 @@
 class auto_click final {
   private:
     char button_{};
-    int click_{}, counter_{};
+    int click_{};
+    int counter_{};
     std::chrono::milliseconds sleep_time_{};
     auto execute_()
     {
