@@ -35,31 +35,32 @@ class auto_click final {
     {
         for ( ; counter_ < click_; ++counter_ ) {
             execute_();
-            cpp_utils::perf_sleep( sleep_time_ );
+            std::this_thread::sleep_for( sleep_time_ );
         }
     }
 };
 auto main() -> int
 {
     using namespace std::chrono_literals;
-    cpp_utils::console_ui_ansi ui;
+    const auto current_window_handle{ GetConsoleWindow() };
+    cpp_utils::console_ui ui;
     auto_click clicker;
     std::chrono::milliseconds sleep_time{};
     int click{};
     char button[ 2 ]{};
     bool is_configed[ 3 ]{};
-    auto execute{ [ & ]( cpp_utils::console_ui_ansi::func_args _arg )
+    auto execute{ [ & ]( cpp_utils::console_ui::func_args _arg )
     {
         clicker.set( button[ 0 ], click, sleep_time );
         for ( short i{ 5 }; i >= 0; --i ) {
             std::print( " (i) 请在 {} 秒内将鼠标移动到指定位置.\r", i );
-            cpp_utils::perf_sleep( 1s );
+            std::this_thread::sleep_for( 1s );
         }
         std::print( "\n (i) 开始执行." );
         clicker.run();
-        return cpp_utils::console_value::ui_back;
+        return cpp_utils::console_ui::back;
     } };
-    auto check{ [ & ]( bool &_src, cpp_utils::console_ui_ansi::func_args &_arg )
+    auto check{ [ & ]( bool &_src, cpp_utils::console_ui::func_args &_arg )
     {
         _src = true;
         for ( const auto &i : is_configed ) {
@@ -69,7 +70,7 @@ auto main() -> int
         }
         _arg.parent_ui.remove( 1, 2 ).add_back( " > 执行 ", execute );
     } };
-    auto set_click_num{ [ & ]( cpp_utils::console_ui_ansi::func_args _arg )
+    auto set_click_num{ [ & ]( cpp_utils::console_ui::func_args _arg )
     {
         _arg.parent_ui.lock( false, true );
         std::print( "请输入点击次数: " );
@@ -81,9 +82,9 @@ auto main() -> int
             std::print( "数据必须大于 0, 请重新输入: " );
         }
         check( is_configed[ 0 ], _arg );
-        return cpp_utils::console_value::ui_back;
+        return cpp_utils::console_ui::back;
     } };
-    auto set_sleep_time{ [ & ]( cpp_utils::console_ui_ansi::func_args _arg )
+    auto set_sleep_time{ [ & ]( cpp_utils::console_ui::func_args _arg )
     {
         _arg.parent_ui.lock( false, true );
         std::print( "请输入间隔时间 (单位: 毫秒): " );
@@ -97,9 +98,9 @@ auto main() -> int
             std::print( "请输入数据必须大于 0, 请重新输入: " );
         }
         check( is_configed[ 1 ], _arg );
-        return cpp_utils::console_value::ui_back;
+        return cpp_utils::console_ui::back;
     } };
-    auto set_button{ [ & ]( cpp_utils::console_ui_ansi::func_args _arg )
+    auto set_button{ [ & ]( cpp_utils::console_ui::func_args _arg )
     {
         _arg.parent_ui.lock( false, true );
         std::print( "按下左键 (L), 中键 (M), 还是右键 (R): " );
@@ -111,17 +112,22 @@ auto main() -> int
             std::print( "请输入错误, 请重新输入: " );
         }
         check( is_configed[ 2 ], _arg );
-        return cpp_utils::console_value::ui_back;
+        return cpp_utils::console_ui::back;
     } };
+    cpp_utils::set_console_title( "Auto Clicker" );
+    cpp_utils::set_console_charset( 54936 );
+    cpp_utils::set_console_size( 50, 25 );
+    cpp_utils::fix_window_size( current_window_handle, true );
+    cpp_utils::enable_window_minimize_ctrl( current_window_handle, false );
+    cpp_utils::enable_window_close_ctrl( current_window_handle, false );
     ui.add_back( std::format( "{}Auto Clicker\n\n", std::string( 19, ' ' ) ) )
       .add_back( " (i) 全部设置后即可执行.\n" )
       .add_back(
-        " < 退出 ", []( cpp_utils::console_ui_ansi::func_args ) { return cpp_utils::console_value::ui_quit; },
+        " < 退出 ", []( cpp_utils::console_ui::func_args ) { return cpp_utils::console_ui::exit; },
         cpp_utils::console_value::text_foreground_red | cpp_utils::console_value::text_foreground_intensity )
       .add_back( " > 设置点击次数 ", set_click_num )
       .add_back( " > 设置点击间隔时间 ", set_sleep_time )
       .add_back( " > 设置点击键 ", set_button )
-      .set_console( "Auto Clicker", 54936, 50, 25, true, true, true, 255 )
       .show();
     return 0;
 }

@@ -1,401 +1,717 @@
 #pragma once
 #if defined( _WIN32 ) || defined( _WIN64 )
-# include <shldisp.h>
-# include <shlguid.h>
-# include <shlobj.h>
-# include <shlwapi.h>
-# include <tchar.h>
 # include <windows.h>
 #endif
-#include <ciso646>
-#include <iconv.h>
-#include <stdatomic.h>
-#include <algorithm>
-#include <any>
-#include <array>
-#include <atomic>
-#include <barrier>
-#include <bit>
-#include <bitset>
-#include <cassert>
-#include <ccomplex>
-#include <cctype>
-#include <cerrno>
-#include <cfenv>
-#include <cfloat>
-#include <charconv>
 #include <chrono>
-#include <cinttypes>
-#include <climits>
-#include <clocale>
-#include <cmath>
-#include <codecvt>
-#include <compare>
-#include <complex>
 #include <concepts>
-#include <condition_variable>
 #include <coroutine>
-#include <csetjmp>
-#include <csignal>
-#include <cstdalign>
-#include <cstdarg>
-#include <cstdbool>
-#include <cstddef>
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <ctgmath>
-#include <ctime>
-#include <cuchar>
-#include <cwchar>
-#include <cwctype>
-#include <deque>
 #include <exception>
 #include <expected>
-#include <filesystem>
-#include <format>
-#include <forward_list>
-#include <fstream>
 #include <functional>
-#include <future>
 #include <generator>
-#include <initializer_list>
-#include <iomanip>
-#include <ios>
-#include <iosfwd>
-#include <iostream>
-#include <istream>
-#include <iterator>
-#include <latch>
-#include <limits>
-#include <list>
-#include <locale>
-#include <map>
-#include <memory>
-#include <memory_resource>
-#include <mutex>
-#include <new>
-#include <numbers>
-#include <numeric>
 #include <optional>
-#include <ostream>
 #include <print>
 #include <queue>
-#include <random>
-#include <ranges>
-#include <ratio>
-#include <regex>
-#include <scoped_allocator>
-#include <semaphore>
-#include <set>
-#include <shared_mutex>
-#include <source_location>
-#include <span>
-#include <spanstream>
-#include <sstream>
-#include <stack>
-#include <stacktrace>
-#include <stdexcept>
-#include <stdfloat>
-#include <stop_token>
-#include <streambuf>
 #include <string>
 #include <string_view>
-#include <syncstream>
-#include <system_error>
-#include <text_encoding>
 #include <thread>
-#include <tuple>
 #include <type_traits>
-#include <typeindex>
-#include <typeinfo>
-#include <unordered_map>
-#include <unordered_set>
-#include <utility>
-#include <valarray>
-#include <variant>
-#include <vector>
-#include <version>
 namespace cpp_utils {
-    using namespace std::chrono_literals;
-    using namespace std::string_literals;
-    using io_stream        = std::FILE;
-    using size_type        = std::size_t;
-    using ansi_char        = char;
-    using ansi_string      = std::string;
-    using ansi_string_view = std::string_view;
-    using wide_char        = wchar_t;
-    using wide_string      = std::wstring;
-    using wide_string_view = std::wstring_view;
-    using utf8_char        = char8_t;
-    using utf8_string      = std::u8string;
-    using utf8_string_view = std::u8string_view;
+    using io_buffer             = std::FILE;
+    using size_type             = std::size_t;
+    using nullptr_type          = std::nullptr_t;
+    using ansi_char             = char;
+    using ansi_std_string       = std::string;
+    using ansi_std_string_view  = std::string_view;
+    using wide_char             = wchar_t;
+    using wide_std_string       = std::wstring;
+    using wide_std_string_view  = std::wstring_view;
+    using utf8_char             = char8_t;
+    using utf8_std_string       = std::u8string;
+    using utf8_std_string_view  = std::u8string_view;
+    using utf16_char            = char16_t;
+    using utf16_std_string      = std::u16string;
+    using utf16_std_string_view = std::u16string_view;
+    using utf32_char            = char32_t;
+    using utf32_std_string      = std::u32string;
+    using utf32_std_string_view = std::u32string_view;
     template < typename _type_ >
     using type_alloc = _type_;
     template < typename _char_type >
     using std_string = std::basic_string< _char_type >;
     template < typename _char_type >
     using std_string_view = std::basic_string_view< _char_type >;
-    template < typename _char_type_ >
-    inline consteval auto is_char_type()
+    template < typename _type_ >
+    concept char_type
+      = std::same_as< std::decay_t< _type_ >, ansi_char > || std::same_as< std::decay_t< _type_ >, wide_char >
+     || std::same_as< std::decay_t< _type_ >, utf8_char > || std::same_as< std::decay_t< _type_ >, utf16_char >
+     || std::same_as< std::decay_t< _type_ >, utf32_char >;
+    template < typename _type_a_, typename _type_b_ >
+    concept convertible_char_type = char_type< _type_a_ > && char_type< _type_b_ > && sizeof( _type_a_ ) == sizeof( _type_b_ );
+    template < typename _type_ >
+    concept pointer_type = std::is_pointer_v< _type_ >;
+    template < typename _type_ >
+    concept callable_type
+      = !std::same_as< std::decay_t< _type_ >, std::thread > && !std::same_as< std::decay_t< _type_ >, std::jthread >;
+    template < typename _type_ >
+    concept std_chrono_type = requires {
+        requires(
+          std::same_as< std::decay_t< _type_ >, std::chrono::nanoseconds >
+          || std::same_as< std::decay_t< _type_ >, std::chrono::microseconds >
+          || std::same_as< std::decay_t< _type_ >, std::chrono::milliseconds >
+          || std::same_as< std::decay_t< _type_ >, std::chrono::seconds >
+          || std::same_as< std::decay_t< _type_ >, std::chrono::minutes >
+          || std::same_as< std::decay_t< _type_ >, std::chrono::hours > || std::same_as< std::decay_t< _type_ >, std::chrono::days >
+          || std::same_as< std::decay_t< _type_ >, std::chrono::weeks > || std::same_as< std::decay_t< _type_ >, std::chrono::months >
+          || std::same_as< std::decay_t< _type_ >, std::chrono::years > );
+    };
+    template < char_type _target_, char_type _source_ >
+        requires convertible_char_type< _target_, _source_ >
+    inline auto string_convert( const std_string< _source_ > &_str )
     {
-        return std::is_same_v< _char_type_, ansi_char > || std::is_same_v< _char_type_, wide_char >
-            || std::is_same_v< _char_type_, utf8_char > || std::is_same_v< _char_type_, char16_t >
-            || std::is_same_v< _char_type_, char32_t >;
+        const auto str_it{ reinterpret_cast< const _target_ * >( _str.c_str() ) };
+        return std_string< _target_ >{ str_it, str_it + _str.size() };
     }
-    template < typename _target_char_type_, typename _source_char_type_ >
-        requires( is_char_type< std::decay_t< _target_char_type_ > >() && is_char_type< std::decay_t< _source_char_type_ > >() )
-    inline consteval auto is_convertible_char_type()
+    template < char_type _target_, char_type _source_ >
+        requires convertible_char_type< _target_, _source_ >
+    inline auto string_convert( const std_string_view< _source_ > _str )
     {
-        return sizeof( std::decay_t< _target_char_type_ > ) == sizeof( std::decay_t< _source_char_type_ > );
+        const auto str_it{ reinterpret_cast< const _target_ * >( _str.data() ) };
+        return std_string< _target_ >{ str_it, str_it + _str.size() };
     }
-    template < typename _target_char_type_, typename _source_char_type_ >
-        requires( is_convertible_char_type< _target_char_type_, _source_char_type_ >() )
-    inline auto string_convert( const std_string< _source_char_type_ > &_str )
+    template < char_type _target_, char_type _source_ >
+        requires convertible_char_type< _target_, _source_ >
+    inline auto string_convert( const _source_ *const _str )
     {
-        auto str_it{ reinterpret_cast< const _target_char_type_ * >( _str.c_str() ) };
-        return std_string< _target_char_type_ >{ str_it, str_it + _str.size() };
+        return std_string< _target_ >{ reinterpret_cast< const _target_ * >( _str ) };
     }
-    template < typename _target_char_type_, typename _source_char_type_ >
-        requires( is_convertible_char_type< _target_char_type_, _source_char_type_ >() )
-    inline auto string_convert( const std_string_view< _source_char_type_ > _str )
+    template < char_type _target_, char_type _source_ >
+        requires convertible_char_type< _target_, _source_ >
+    inline auto string_view_convert( const std_string< _source_ > &_str )
     {
-        auto str_it{ reinterpret_cast< const _target_char_type_ * >( _str.data() ) };
-        return std_string< _target_char_type_ >{ str_it, str_it + _str.size() };
+        const auto str_it{ reinterpret_cast< const _target_ * >( _str.c_str() ) };
+        return std_string_view< _target_ >{ str_it, str_it + _str.size() };
     }
-    template < typename _target_char_type_, typename _source_char_type_ >
-        requires( is_convertible_char_type< _target_char_type_, _source_char_type_ >() )
-    inline auto string_convert( const _source_char_type_ *_str )
+    template < char_type _target_, char_type _source_ >
+        requires convertible_char_type< _target_, _source_ >
+    inline auto string_view_convert( const std_string_view< _source_ > _str )
     {
-        return std_string< _target_char_type_ >{ reinterpret_cast< const _target_char_type_ * >( _str ) };
+        const auto str_it{ reinterpret_cast< const _target_ * >( _str.data() ) };
+        return std_string_view< _target_ >{ str_it, str_it + _str.size() };
     }
-    template < typename _target_char_type_, typename _source_char_type_ >
-        requires( is_convertible_char_type< _target_char_type_, _source_char_type_ >() )
-    inline auto string_view_convert( const std_string< _source_char_type_ > &_str )
+    template < char_type _target_, char_type _source_ >
+        requires convertible_char_type< _target_, _source_ >
+    inline auto string_view_convert( const _source_ *const _str )
     {
-        auto str_it{ reinterpret_cast< const _target_char_type_ * >( _str.c_str() ) };
-        return std_string_view< _target_char_type_ >{ str_it, str_it + _str.size() };
+        return std_string_view< _target_ >{ reinterpret_cast< const _target_ * >( _str ) };
     }
-    template < typename _target_char_type_, typename _source_char_type_ >
-        requires( is_convertible_char_type< _target_char_type_, _source_char_type_ >() )
-    inline auto string_view_convert( const std_string_view< _source_char_type_ > _str )
+    template < pointer_type _type_ >
+    inline auto ptr_to_string( const _type_ _ptr )
     {
-        auto str_it{ reinterpret_cast< const _target_char_type_ * >( _str.data() ) };
-        return std_string_view< _target_char_type_ >{ str_it, str_it + _str.size() };
-    }
-    template < typename _target_char_type_, typename _source_char_type_ >
-        requires( is_convertible_char_type< _target_char_type_, _source_char_type_ >() )
-    inline auto string_view_convert( const _source_char_type_ *_str )
-    {
-        return std_string_view< _target_char_type_ >{ reinterpret_cast< const _target_char_type_ * >( _str ) };
-    }
-    template < typename _ptr_type_ >
-        requires( std::is_pointer_v< _ptr_type_ > )
-    inline auto ptr_to_ansi_string( _ptr_type_ _ptr )
-    {
+        using namespace std::string_literals;
         return _ptr == nullptr ? "nullptr"s : std::format( "0x{:x}", reinterpret_cast< std::uintptr_t >( _ptr ) );
     }
-    template < typename _ptr_type_ >
-        requires( std::is_pointer_v< _ptr_type_ > )
-    inline auto ptr_to_utf8_string( _ptr_type_ _ptr )
-    {
-        return string_convert< utf8_char >(
-          _ptr == nullptr ? "nullptr"s : std::format( "0x{:x}", reinterpret_cast< std::uintptr_t >( _ptr ) ) );
-    }
     template < typename... _args_ >
-    inline auto utf8_format( const utf8_string_view _fmt, _args_ &&..._args )
+    inline auto utf8_format( const utf8_std_string_view _fmt, _args_ &&..._args )
     {
-        const auto convert_arg{ []( auto &&_arg ) -> decltype( auto )
+        auto convert_arg{ []< typename _type_ >( _type_ &&_arg ) static -> decltype( auto )
         {
-            if constexpr (
-              std::is_same_v< std::decay_t< decltype( _arg ) >, utf8_string >
-              || std::is_same_v< std::decay_t< decltype( _arg ) >, utf8_string_view >
-              || std::is_same_v< std::decay_t< decltype( _arg ) >, utf8_char * >
-              || std::is_same_v< std::decay_t< decltype( _arg ) >, const utf8_char * > )
-            {
-                return static_cast< const ansi_string_view >( string_view_convert< ansi_char >( utf8_string_view{ _arg } ) );
+            if constexpr ( std::same_as< std::decay_t< _type_ >, utf8_std_string > ) {
+                if constexpr ( std::is_const_v< std::remove_reference_t< _type_ > > ) {
+                    return reinterpret_cast< const ansi_std_string * >( &_arg );
+                } else {
+                    return reinterpret_cast< ansi_std_string * >( &_arg );
+                }
+            } else if constexpr ( std::same_as< std::decay_t< _type_ >, utf8_std_string_view > ) {
+                if constexpr ( std::is_const_v< std::remove_reference_t< _type_ > > ) {
+                    return reinterpret_cast< const ansi_std_string_view * >( &_arg );
+                } else {
+                    return reinterpret_cast< ansi_std_string_view * >( &_arg );
+                }
+            } else if constexpr ( std::same_as< std::decay_t< _type_ >, utf8_char * > ) {
+                return std::make_unique< ansi_char * >( reinterpret_cast< ansi_char * >( &_arg ) );
+            } else if constexpr ( std::same_as< std::decay_t< _type_ >, const utf8_char * > ) {
+                return std::make_unique< const ansi_char * >( reinterpret_cast< const ansi_char * >( &_arg ) );
             } else if constexpr (
-              std::is_pointer_v< std::decay_t< decltype( _arg ) > >
-              && !( std::is_same_v< std::decay_t< decltype( _arg ) >, ansi_char * >
-                    || std::is_same_v< std::decay_t< decltype( _arg ) >, const ansi_char * > ) )
+              std::is_pointer_v< std::decay_t< _type_ > >
+              && !( std::same_as< std::decay_t< _type_ >, ansi_char * > || std::same_as< std::decay_t< _type_ >, const ansi_char * > ) )
             {
-                return static_cast< const ansi_string >( ptr_to_ansi_string( std::forward< decltype( _arg ) >( _arg ) ) );
+                return std::make_unique< const ansi_std_string >( ptr_to_ansi_string( std::forward< _type_ >( _arg ) ) );
             } else {
-                return std::as_const( _arg );
+                return &_arg;
             }
         } };
         return string_convert< utf8_char >( std::vformat(
-          string_view_convert< ansi_char >( _fmt ), std::make_format_args( convert_arg( std::forward< _args_ >( _args ) )... ) ) );
+          string_view_convert< ansi_char >( _fmt ), std::make_format_args( *convert_arg( std::forward< _args_ >( _args ) )... ) ) );
     }
     template < typename... _args_ >
-    inline auto &utf8_format_to( utf8_string &_str, const utf8_string_view _fmt, _args_ &&..._args )
+    inline auto &utf8_format_to( utf8_std_string &_str, const utf8_std_string_view _fmt, _args_ &&..._args )
     {
-        auto tmp{ utf8_format( _fmt, std::forward< _args_ >( _args )... ) };
-        _str.swap( tmp );
+        _str = utf8_format( _fmt, std::forward< _args_ >( _args )... );
         return _str;
     }
     template < typename... _args_ >
-    inline auto utf8_print( const utf8_string_view _fmt, _args_ &&..._args )
+    inline auto utf8_print( const utf8_std_string_view _fmt, _args_ &&..._args )
     {
         std::print( "{}", string_view_convert< ansi_char >( utf8_format( _fmt, std::forward< _args_ >( _args )... ) ) );
     }
     template < typename... _args_ >
-    inline auto utf8_print( io_stream *_stream, const utf8_string_view _fmt, _args_ &&..._args )
+    inline auto utf8_print( io_buffer *const _stream, const utf8_std_string_view _fmt, _args_ &&..._args )
     {
         std::print( _stream, "{}", string_view_convert< ansi_char >( utf8_format( _fmt, std::forward< _args_ >( _args )... ) ) );
     }
     template < typename... _args_ >
-    inline auto utf8_println( const utf8_string_view _fmt, _args_ &&..._args )
+    inline auto utf8_println( const utf8_std_string_view _fmt, _args_ &&..._args )
     {
         std::println( "{}", string_view_convert< ansi_char >( utf8_format( _fmt, std::forward< _args_ >( _args )... ) ) );
     }
     template < typename... _args_ >
-    inline auto utf8_println( io_stream *_stream, const utf8_string_view _fmt, _args_ &&..._args )
+    inline auto utf8_println( io_buffer *const _stream, const utf8_std_string_view _fmt, _args_ &&..._args )
     {
         std::println( _stream, "{}", string_view_convert< ansi_char >( utf8_format( _fmt, std::forward< _args_ >( _args )... ) ) );
     }
-    template < typename _char_type_, std::size_t _length_ >
-    struct constexpr_string final {
-        _char_type_ data[ _length_ ]{};
-        auto operator=( const constexpr_string & ) -> constexpr_string & = delete;
-        auto operator=( constexpr_string && ) -> constexpr_string &      = delete;
-        constexpr constexpr_string( const _char_type_ ( &_str )[ _length_ ] )
-        {
-            std::copy( _str, _str + _length_, data );
-        }
-        constexpr constexpr_string( const constexpr_string & ) = default;
-        constexpr constexpr_string( constexpr_string && )      = delete;
-        constexpr ~constexpr_string()                          = default;
-    };
-    template < typename _chrono_type_ >
-    inline auto perf_sleep( const _chrono_type_ _time )
-    {
-        std::this_thread::yield();
-        std::this_thread::sleep_for( _time );
-    }
-    template < typename _char_type_ >
-        requires( std::is_same_v< _char_type_, ansi_char > || std::is_same_v< _char_type_, utf8_char > )
-    class multithread_task final {
+    template < char_type _type_, size_type _capacity_ >
+        requires( std::same_as< _type_, std::decay_t< _type_ > > && _capacity_ > 0 )
+    struct constant_string final {
       private:
-        struct node_ final {
-            std::jthread task_thread{};
-            auto operator=( const node_ & ) -> node_ & = delete;
-            auto operator=( node_ && ) -> node_ &      = default;
-            node_()                                    = default;
-            node_( std::jthread &&_task_thread )
-              : task_thread{ std::move( _task_thread ) }
-            { }
-            node_( const node_ & ) = delete;
-            node_( node_ && )      = default;
-            ~node_()
-            {
-                if ( task_thread.joinable() ) {
-                    if constexpr ( std::is_same_v< _char_type_, ansi_char > ) {
-                        std::print( " -> 终止线程 {}.\n", task_thread.get_id() );
-                    } else if constexpr ( std::is_same_v< _char_type_, utf8_char > ) {
-                        utf8_print( u8" -> 终止线程 {}.\n", task_thread.get_id() );
-                    }
+        _type_ data_[ _capacity_ ]{};
+      public:
+        auto c_str() const noexcept
+        {
+            return const_cast< const _type_ * >( data_ );
+        }
+        auto compare( const _type_ *const _src ) const noexcept
+        {
+            if ( _src == nullptr ) {
+                return false;
+            }
+            size_type src_size{ 0 };
+            while ( _src[ src_size ] != '\0' ) {
+                ++src_size;
+            }
+            if ( src_size + 1 != _capacity_ ) {
+                return false;
+            }
+            for ( size_type i{ 0 }; i < _capacity_; ++i ) {
+                if ( data_[ i ] != _src[ i ] ) {
+                    return false;
                 }
             }
-        };
-        std::vector< node_ > tasks_{};
-      public:
-        template < typename _callable_, typename... _args_ >
-            requires( !( std::is_same_v< std::remove_cvref_t< _callable_ >, std::thread >
-                         || std::is_same_v< std::remove_cvref_t< _callable_ >, std::jthread > ) )
-        auto &add_task( const std_string_view< _char_type_ > _comment, _callable_ &&_func, _args_ &&..._args )
-        {
-            if constexpr ( std::is_same_v< _char_type_, ansi_char > ) {
-                std::print( " -> 创建线程: {}.\n", _comment );
-            } else if constexpr ( std::is_same_v< _char_type_, utf8_char > ) {
-                utf8_print( u8" -> 创建线程: {}.\n", _comment );
-            }
-            tasks_.emplace_back( node_{
-              std::jthread{ std::forward< _callable_ >( _func ), std::forward< _args_ >( _args )... }
-            } );
-            return *this;
+            return true;
         }
-        auto &join_task( const size_type _index )
+        template < size_type _src_capacity_ >
+        auto compare( const _type_ ( &_src )[ _src_capacity_ ] ) const noexcept
         {
-            auto &task{ tasks_.at( _index ).task_thread };
-            if ( task.joinable() ) {
-                task.join();
+            if ( _src_capacity_ != _capacity_ ) {
+                return false;
             }
-            return *this;
+            for ( size_type i{ 0 }; i < _capacity_; ++i ) {
+                if ( data_[ i ] != _src[ i ] ) {
+                    return false;
+                }
+            }
+            return true;
         }
-        auto &detach_task( const size_type _index )
+        template < size_type _src_capacity_ >
+        auto compare( const constant_string< _type_, _src_capacity_ > &_src ) const noexcept
         {
-            auto &task{ tasks_.at( _index ).task_thread };
-            if ( task.joinable() ) {
-                task.detach();
+            if ( _src_capacity_ != _capacity_ ) {
+                return false;
             }
-            return *this;
+            for ( size_type i{ 0 }; i < _capacity_; ++i ) {
+                if ( data_[ i ] != _src.data_[ i ] ) {
+                    return false;
+                }
+            }
+            return true;
         }
-        auto operator=( const multithread_task & ) -> multithread_task & = delete;
-        auto operator=( multithread_task && ) -> multithread_task &      = default;
-        multithread_task()                                               = default;
-        multithread_task( const multithread_task & )                     = delete;
-        multithread_task( multithread_task && )                          = default;
-        ~multithread_task()                                              = default;
+        auto operator==( const _type_ *const _src ) const noexcept
+        {
+            return compare( _src );
+        }
+        template < size_type _src_capacity_ >
+        auto operator==( const _type_ ( &_src )[ _src_capacity_ ] ) const noexcept
+        {
+            return compare( _src );
+        }
+        template < size_type _src_capacity_ >
+        auto operator==( const constant_string< _type_, _src_capacity_ > &_src ) const noexcept
+        {
+            return compare( _src );
+        }
+        const auto &operator[]( const size_type _index ) const noexcept
+        {
+            return data_[ _index ];
+        }
+        auto operator=( const constant_string< _type_, _capacity_ > & ) -> constant_string< _type_, _capacity_ > & = delete;
+        auto operator=( constant_string< _type_, _capacity_ > && ) -> constant_string< _type_, _capacity_ > &      = delete;
+        constexpr constant_string( const _type_ ( &_str )[ _capacity_ ] ) noexcept
+        {
+            std::copy( _str, _str + _capacity_, data_ );
+        }
+        constexpr constant_string( const constant_string< _type_, _capacity_ > & ) = default;
+        constexpr constant_string( constant_string< _type_, _capacity_ > && )      = delete;
+        constexpr ~constant_string()                                               = default;
     };
-    using multithread_task_ansi = multithread_task< ansi_char >;
-    using multithread_task_utf8 = multithread_task< utf8_char >;
-    class multithread_task_nolog final {
-      private:
-        struct node_ final {
-            std::jthread task_thread{};
-            auto operator=( const node_ & ) -> node_ & = delete;
-            auto operator=( node_ && ) -> node_ &      = default;
-            node_()                                    = default;
-            node_( std::jthread &&_task_thread )
-              : task_thread{ std::move( _task_thread ) }
-            { }
-            node_( const node_ & ) = delete;
-            node_( node_ && )      = default;
-            ~node_()               = default;
-        };
-        std::vector< node_ > tasks_{};
+    template < size_type _capacity_ >
+    using constant_ansi_string = constant_string< ansi_char, _capacity_ >;
+    template < size_type _capacity_ >
+    using constant_wide_string = constant_string< wide_char, _capacity_ >;
+    template < size_type _capacity_ >
+    using constant_utf8_string = constant_string< utf8_char, _capacity_ >;
+    template < size_type _capacity_ >
+    using constant_utf16_string = constant_string< utf16_char, _capacity_ >;
+    template < size_type _capacity_ >
+    using constant_utf32_string = constant_string< utf32_char, _capacity_ >;
+    class coroutine_void final {
       public:
-        template < typename _callable_, typename... _args_ >
-            requires( !( std::is_same_v< std::remove_cvref_t< _callable_ >, std::thread >
-                         || std::is_same_v< std::remove_cvref_t< _callable_ >, std::jthread > ) )
-        auto &add_task( _callable_ &&_func, _args_ &&..._args )
+        struct promise_type final {
+            auto get_return_object()
+            {
+                return coroutine_void{ handle::from_promise( *this ) };
+            }
+            static auto initial_suspend() noexcept
+            {
+                return std::suspend_always{};
+            }
+            static auto final_suspend() noexcept
+            {
+                return std::suspend_always{};
+            }
+            static auto return_void() noexcept { }
+            [[noreturn]]
+            static auto unhandled_exception()
+            {
+                throw;
+            }
+            auto await_transform() -> void                               = delete;
+            auto operator=( const promise_type & ) -> promise_type &     = default;
+            auto operator=( promise_type && ) noexcept -> promise_type & = default;
+            promise_type()                                               = default;
+            promise_type( const promise_type & )                         = default;
+            promise_type( promise_type && ) noexcept                     = default;
+            ~promise_type()                                              = default;
+        };
+        using handle = std::coroutine_handle< promise_type >;
+        auto empty() const noexcept
         {
-            tasks_.emplace_back( node_{
-              std::jthread{ std::forward< _callable_ >( _func ), std::forward< _args_ >( _args )... }
-            } );
+            return coroutine_handle_ == nullptr;
+        }
+        auto done() const noexcept
+        {
+            return coroutine_handle_.done();
+        }
+        auto address() const noexcept
+        {
+            return coroutine_handle_.address();
+        }
+        auto destroy() const
+        {
+            coroutine_handle_.destroy();
+        }
+        auto safe_destroy() noexcept
+        {
+            if ( !empty() ) {
+                destroy();
+                coroutine_handle_ = {};
+            }
+        }
+        auto reset( coroutine_void &&_src )
+        {
+            if ( this != &_src ) {
+                if ( !empty() ) {
+                    destroy();
+                }
+                coroutine_handle_      = _src.coroutine_handle_;
+                _src.coroutine_handle_ = {};
+            }
+        }
+        auto resume() const
+        {
+            coroutine_handle_.resume();
+        }
+        auto safe_resume() const noexcept
+        {
+            if ( !done() ) {
+                resume();
+            }
+        }
+        auto operator=( const coroutine_void & ) -> coroutine_void & = delete;
+        auto operator=( coroutine_void &&_src ) -> coroutine_void &
+        {
+            reset( std::move( _src ) );
             return *this;
         }
-        auto &join_task( const size_type _index )
+        coroutine_void() = default;
+        coroutine_void( const handle _coroutine_handle )
+          : coroutine_handle_{ _coroutine_handle }
+        { }
+        coroutine_void( const coroutine_void & ) = delete;
+        coroutine_void( coroutine_void &&_src ) noexcept
+          : coroutine_handle_{ _src.coroutine_handle_ }
         {
-            auto &task{ tasks_.at( _index ).task_thread };
-            if ( task.joinable() ) {
-                task.join();
+            _src.coroutine_handle_ = {};
+        }
+        ~coroutine_void()
+        {
+            if ( !empty() ) {
+                coroutine_handle_.destroy();
+            }
+        }
+      private:
+        handle coroutine_handle_{};
+    };
+    template < std::movable _type_ >
+    class coroutine final {
+      public:
+        struct promise_type final {
+            std::optional< _type_ > current_value{ std::nullopt };
+            auto get_return_object()
+            {
+                return coroutine< _type_ >{ handle::from_promise( *this ) };
+            }
+            static auto initial_suspend() noexcept
+            {
+                return std::suspend_always{};
+            }
+            static auto final_suspend() noexcept
+            {
+                return std::suspend_always{};
+            }
+            auto yield_value( _type_ _value ) noexcept
+            {
+                current_value = std::move( _value );
+                return std::suspend_always{};
+            }
+            auto yield_value( std::nullopt_t ) noexcept
+            {
+                current_value = std::nullopt;
+                return std::suspend_always{};
+            }
+            auto return_value( _type_ _value ) noexcept
+            {
+                current_value = std::move( _value );
+            }
+            auto return_value( std::nullopt_t ) noexcept
+            {
+                current_value = std::nullopt;
+            }
+            [[noreturn]]
+            static auto unhandled_exception()
+            {
+                throw;
+            }
+            auto await_transform() -> void                               = delete;
+            auto operator=( const promise_type & ) -> promise_type &     = default;
+            auto operator=( promise_type && ) noexcept -> promise_type & = default;
+            promise_type()                                               = default;
+            promise_type( const promise_type & )                         = default;
+            promise_type( promise_type && ) noexcept                     = default;
+            ~promise_type()                                              = default;
+        };
+        using handle = std::coroutine_handle< promise_type >;
+        class iterator final {
+          private:
+            const handle coroutine_handle_;
+          public:
+            auto operator++() -> coroutine< _type_ >::iterator &
+            {
+                coroutine_handle_.resume();
+                return *this;
+            }
+            auto operator++( int ) -> coroutine< _type_ >::iterator
+            {
+                coroutine_handle_.resume();
+                return *this;
+            }
+            auto &operator*()
+            {
+                return coroutine_handle_.promise().current_value;
+            }
+            const auto &operator*() const
+            {
+                return coroutine_handle_.promise().current_value;
+            }
+            auto operator&() const
+            {
+                return &coroutine_handle_.promise().current_value;
+            }
+            auto operator==( std::default_sentinel_t ) const
+            {
+                return !coroutine_handle_ || coroutine_handle_.done();
+            }
+            auto operator=( const iterator & ) -> iterator &     = default;
+            auto operator=( iterator && ) noexcept -> iterator & = default;
+            iterator( const handle _coroutine_handle )
+              : coroutine_handle_{ _coroutine_handle }
+            { }
+            iterator( const iterator & )     = default;
+            iterator( iterator && ) noexcept = default;
+            ~iterator()                      = default;
+        };
+        auto empty() const noexcept
+        {
+            return coroutine_handle_ == nullptr;
+        }
+        auto done() const noexcept
+        {
+            return coroutine_handle_.done();
+        }
+        auto address() const noexcept
+        {
+            return coroutine_handle_.address();
+        }
+        auto destroy() const
+        {
+            coroutine_handle_.destroy();
+        }
+        auto safe_destroy() noexcept
+        {
+            if ( !empty() ) {
+                destroy();
+                coroutine_handle_ = {};
+            }
+        }
+        auto reset( coroutine< _type_ > &&_src )
+        {
+            if ( this != &_src ) {
+                if ( !empty() ) {
+                    destroy();
+                }
+                coroutine_handle_      = _src.coroutine_handle_;
+                _src.coroutine_handle_ = {};
+            }
+        }
+        auto resume() const
+        {
+            coroutine_handle_.resume();
+        }
+        auto safe_resume() const noexcept
+        {
+            if ( !done() ) {
+                resume();
+            }
+        }
+        auto copy_optional() const
+        {
+            return coroutine_handle_.promise().current_value;
+        }
+        auto resume_and_copy_optional() const
+        {
+            resume();
+            return coroutine_handle_.promise().current_value;
+        }
+        auto safe_resume_and_copy_optional() const noexcept
+        {
+            safe_resume();
+            return coroutine_handle_.promise().current_value;
+        }
+        auto &reference_optional() noexcept
+        {
+            return coroutine_handle_.promise().current_value;
+        }
+        auto &resume_and_reference_optional()
+        {
+            resume();
+            return coroutine_handle_.promise().current_value;
+        }
+        auto &safe_resume_and_reference_optional() noexcept
+        {
+            safe_resume();
+            return coroutine_handle_.promise().current_value;
+        }
+        auto &&move_optional() noexcept
+        {
+            return std::move( coroutine_handle_.promise().current_value );
+        }
+        auto &&resume_and_move_optional() noexcept
+        {
+            resume();
+            return std::move( coroutine_handle_.promise().current_value );
+        }
+        auto &&safe_resume_and_move_optional() noexcept
+        {
+            safe_resume();
+            return std::move( coroutine_handle_.promise().current_value );
+        }
+        auto begin()
+        {
+            if ( !empty() ) {
+                coroutine_handle_.resume();
+            }
+            return iterator{ coroutine_handle_ };
+        }
+        auto end() noexcept
+        {
+            return std::default_sentinel_t{};
+        }
+        auto operator=( const coroutine< _type_ > & ) -> coroutine< _type_ > & = delete;
+        auto operator=( coroutine< _type_ > &&_src ) noexcept -> coroutine< _type_ > &
+        {
+            reset( std::move( _src ) );
+            return *this;
+        }
+        coroutine() = default;
+        coroutine( const handle _coroutine_handle )
+          : coroutine_handle_{ _coroutine_handle }
+        { }
+        coroutine( const coroutine< _type_ > & ) = delete;
+        coroutine( coroutine< _type_ > &&_src ) noexcept
+          : coroutine_handle_{ _src.coroutine_handle_ }
+        {
+            _src.coroutine_handle_ = {};
+        }
+        ~coroutine()
+        {
+            safe_destroy();
+        }
+      private:
+        handle coroutine_handle_{};
+    };
+    class thread_pool final {
+      private:
+        std::deque< std::jthread > threads_{};
+      public:
+        auto empty() const noexcept
+        {
+            return threads_.empty();
+        }
+        auto size() const noexcept
+        {
+            return threads_.size();
+        }
+        auto max_size() const noexcept
+        {
+            return threads_.max_size();
+        }
+        auto &resize( const size_type _size )
+        {
+            threads_.resize( _size );
+            return *this;
+        }
+        auto &optimize_storage() noexcept
+        {
+            threads_.shrink_to_fit();
+            return *this;
+        }
+        auto &swap( thread_pool &_src ) noexcept
+        {
+            threads_.swap( _src.threads_ );
+            return *this;
+        }
+        auto &swap( const size_type _index, std::jthread &_src )
+        {
+            threads_.at( _index ).swap( _src );
+            return *this;
+        }
+        auto joinable( const size_type _index ) const
+        {
+            return threads_.at( _index ).joinable();
+        }
+        auto get_id( const size_type _index ) const
+        {
+            return threads_.at( _index ).get_id();
+        }
+        auto native_handle( const size_type _index )
+        {
+            return threads_.at( _index ).native_handle();
+        }
+        template < callable_type _callee_, typename... _args_ >
+        auto &add( _callee_ &&_func, _args_ &&..._args )
+        {
+            threads_.emplace_back( std::forward< _callee_ >( _func ), std::forward< _args_ >( _args )... );
+            return *this;
+        }
+        auto &join( const size_type _index )
+        {
+            threads_.at( _index ).join();
+            return *this;
+        }
+        auto &safe_join( const size_type _index )
+        {
+            auto &thread{ threads_.at( _index ) };
+            if ( thread.joinable() ) {
+                thread.join();
             }
             return *this;
         }
-        auto &detach_task( const size_type _index )
+        auto &join_all()
         {
-            auto &task{ tasks_.at( _index ).task_thread };
-            if ( task.joinable() ) {
-                task.detach();
+            for ( auto &thread : threads_ ) {
+                thread.join();
             }
             return *this;
         }
-        auto operator=( const multithread_task_nolog & ) -> multithread_task_nolog & = delete;
-        auto operator=( multithread_task_nolog && ) -> multithread_task_nolog &      = default;
-        multithread_task_nolog()                                                     = default;
-        multithread_task_nolog( const multithread_task_nolog & )                     = delete;
-        multithread_task_nolog( multithread_task_nolog && )                          = default;
-        ~multithread_task_nolog()                                                    = default;
+        auto &safe_join_all()
+        {
+            for ( auto &thread : threads_ ) {
+                if ( thread.joinable() ) {
+                    thread.join();
+                }
+            }
+            return *this;
+        }
+        auto &detach( const size_type _index )
+        {
+            threads_.at( _index ).detach();
+            return *this;
+        }
+        auto &safe_detach( const size_type _index )
+        {
+            auto &thread{ threads_.at( _index ) };
+            if ( thread.joinable() ) {
+                thread.detach();
+            }
+            return *this;
+        }
+        auto &detach_all()
+        {
+            for ( auto &thread : threads_ ) {
+                thread.detach();
+            }
+            return *this;
+        }
+        auto &safe_detach_all()
+        {
+            for ( auto &thread : threads_ ) {
+                if ( thread.joinable() ) {
+                    thread.detach();
+                }
+            }
+            return *this;
+        }
+        auto get_stop_source( const size_type _index )
+        {
+            return threads_.at( _index ).get_stop_source();
+        }
+        auto get_stop_token( const size_type _index ) const
+        {
+            return threads_.at( _index ).get_stop_token();
+        }
+        auto request_stop( const size_type _index )
+        {
+            return threads_.at( _index ).request_stop();
+        }
+        auto &request_stop_to_all()
+        {
+            for ( auto &thread : threads_ ) {
+                thread.request_stop();
+            }
+            return *this;
+        }
+        auto operator=( const thread_pool & ) -> thread_pool & = delete;
+        auto operator=( thread_pool && ) -> thread_pool &      = default;
+        thread_pool()                                          = default;
+        thread_pool( const thread_pool & )                     = delete;
+        thread_pool( thread_pool && )                          = default;
+        ~thread_pool()                                         = default;
     };
 #if defined( _WIN32 ) || defined( _WIN64 )
-    inline auto is_run_as_admin()
+    inline auto is_run_as_admin() noexcept
     {
-        auto is_admin{ BOOL{} };
-        auto admins_group{ PSID{} };
-        auto nt_authority{ SID_IDENTIFIER_AUTHORITY{ SECURITY_NT_AUTHORITY } };
+        BOOL is_admin;
+        PSID admins_group;
+        SID_IDENTIFIER_AUTHORITY nt_authority{ SECURITY_NT_AUTHORITY };
         if ( AllocateAndInitializeSid(
                &nt_authority, 2, SECURITY_BUILTIN_DOMAIN_RID, DOMAIN_ALIAS_RID_ADMINS, 0, 0, 0, 0, 0, 0, &admins_group )
              == TRUE )
@@ -405,129 +721,286 @@ namespace cpp_utils {
         }
         return is_admin ? true : false;
     }
-    inline auto relaunch_as_admin()
+    inline auto relaunch() noexcept
     {
-        auto file_path{ wide_string( MAX_PATH, L'\0' ) };
-        GetModuleFileNameW( nullptr, file_path.data(), MAX_PATH );
-        ShellExecuteW( nullptr, L"runas", file_path.c_str(), nullptr, nullptr, SW_SHOWNORMAL );
+        wide_char file_path[ MAX_PATH ]{};
+        GetModuleFileNameW( nullptr, file_path, MAX_PATH );
+        ShellExecuteW( nullptr, L"open", file_path, nullptr, nullptr, SW_SHOWNORMAL );
         std::exit( 0 );
-        return;
+    }
+    inline auto relaunch_as_admin() noexcept
+    {
+        wide_char file_path[ MAX_PATH ]{};
+        GetModuleFileNameW( nullptr, file_path, MAX_PATH );
+        ShellExecuteW( nullptr, L"runas", file_path, nullptr, nullptr, SW_SHOWNORMAL );
+        std::exit( 0 );
+    }
+    inline auto get_current_window_handle()
+    {
+        auto window_handle{ GetActiveWindow() };
+        if ( window_handle == nullptr ) {
+            window_handle = GetForegroundWindow();
+        }
+        if ( window_handle == nullptr ) {
+            window_handle = GetConsoleWindow();
+        }
+        return window_handle;
+    }
+    inline auto get_window_state( const HWND _window_handle )
+    {
+        WINDOWPLACEMENT wp;
+        wp.length = sizeof( WINDOWPLACEMENT );
+        GetWindowPlacement( _window_handle, &wp );
+        return wp.showCmd;
+    }
+    inline auto set_window_state( const HWND _window_handle, const UINT _state )
+    {
+        ShowWindow( _window_handle, _state );
+    }
+    inline auto keep_window_top( const HWND _window_handle, const DWORD _thread_id, const DWORD _window_thread_process_id )
+    {
+        AttachThreadInput( _thread_id, _window_thread_process_id, TRUE );
+        set_window_state( _window_handle, get_window_state( _window_handle ) );
+        SetForegroundWindow( _window_handle );
+        AttachThreadInput( _thread_id, _window_thread_process_id, FALSE );
+        SetWindowPos( _window_handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE );
+    }
+    inline auto keep_current_window_top()
+    {
+        auto window_handle{ get_current_window_handle() };
+        keep_window_top( window_handle, GetCurrentThreadId(), GetWindowThreadProcessId( window_handle, nullptr ) );
+    }
+    template < std_chrono_type _chrono_type_, callable_type _callee_, typename... _args_ >
+    inline auto loop_keep_window_top(
+      const HWND _window_handle, const DWORD _thread_id, const DWORD _window_thread_process_id, const _chrono_type_ _sleep_time,
+      _callee_ &&_condition_checker, _args_ &&..._condition_checker_args )
+    {
+        while ( _condition_checker( std::forward< _args_ >( _condition_checker_args )... ) ) {
+            AttachThreadInput( _thread_id, _window_thread_process_id, TRUE );
+            set_window_state( _window_handle, get_window_state( _window_handle ) );
+            SetForegroundWindow( _window_handle );
+            AttachThreadInput( _thread_id, _window_thread_process_id, FALSE );
+            SetWindowPos( _window_handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE );
+            std::this_thread::sleep_for( _sleep_time );
+        }
+    }
+    template < std_chrono_type _chrono_type_, callable_type _callee_, typename... _args_ >
+    inline auto loop_keep_current_window_top(
+      const _chrono_type_ _sleep_time, _callee_ &&_condition_checker, _args_ &&..._condition_checker_args )
+    {
+        auto window_handle{ get_current_window_handle() };
+        loop_keep_window_top(
+          window_handle, GetCurrentThreadId(), GetWindowThreadProcessId( window_handle, nullptr ), _sleep_time,
+          std::forward< _callee_ >( _condition_checker ), std::forward< _args_ >( _condition_checker_args )... );
+    }
+    inline auto cancel_top_window( const HWND _window_handle )
+    {
+        SetWindowPos( _window_handle, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE );
+    }
+    inline auto ignore_console_exit_signal( const bool _is_ignore ) noexcept
+    {
+        return SetConsoleCtrlHandler( nullptr, static_cast< WINBOOL >( _is_ignore ) );
+    }
+    inline auto clear_console_screen()
+    {
+        const auto output_handle{ GetStdHandle( STD_OUTPUT_HANDLE ) };
+        DWORD mode;
+        GetConsoleMode( output_handle, &mode );
+        mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+        SetConsoleMode( output_handle, mode );
+        std::print( "\033[H\033[2J\033c" );
+    }
+    inline auto set_console_title( const ansi_char *const _title )
+    {
+        SetConsoleTitleA( _title );
+    }
+    inline auto set_console_title( const ansi_std_string &_title )
+    {
+        SetConsoleTitleA( _title.data() );
+    }
+    inline auto set_console_title( const wide_char *const _title )
+    {
+        SetConsoleTitleW( _title );
+    }
+    inline auto set_console_title( const wide_std_string &_title )
+    {
+        SetConsoleTitleW( _title.data() );
+    }
+    inline auto set_console_charset( const UINT _charset_id )
+    {
+        SetConsoleOutputCP( _charset_id );
+        SetConsoleCP( _charset_id );
+    }
+    inline auto set_console_size( const SHORT _width, const SHORT _height )
+    {
+        HANDLE output_handle{ GetStdHandle( STD_OUTPUT_HANDLE ) };
+        SMALL_RECT wrt{ 0, 0, static_cast< SHORT >( _width - 1 ), static_cast< SHORT >( _height - 1 ) };
+        ShowWindow( GetConsoleWindow(), SW_SHOWNORMAL );
+        SetConsoleScreenBufferSize( output_handle, { _width, _height } );
+        SetConsoleWindowInfo( output_handle, TRUE, &wrt );
+        SetConsoleScreenBufferSize( output_handle, { _width, _height } );
+        clear_console_screen();
+    }
+    inline auto set_window_translucency( const HWND _window_handle, const BYTE _value )
+    {
+        SetLayeredWindowAttributes( _window_handle, RGB( 0, 0, 0 ), _value, LWA_ALPHA );
+    }
+    inline auto fix_window_size( const HWND _window_handle, const bool _is_enable )
+    {
+        SetWindowLongPtrW(
+          _window_handle, GWL_STYLE,
+          _is_enable
+            ? GetWindowLongPtrW( _window_handle, GWL_STYLE ) & ~WS_SIZEBOX
+            : GetWindowLongPtrW( _window_handle, GWL_STYLE ) | WS_SIZEBOX );
+    }
+    inline auto enable_window_menu( const HWND _window_handle, const bool _is_enable )
+    {
+        SetWindowLongPtrW(
+          _window_handle, GWL_STYLE,
+          _is_enable
+            ? GetWindowLongPtrW( _window_handle, GWL_STYLE ) | WS_SYSMENU
+            : GetWindowLongPtrW( _window_handle, GWL_STYLE ) & ~WS_SYSMENU );
+    }
+    inline auto enable_window_minimize_ctrl( const HWND _window_handle, const bool _is_enable )
+    {
+        SetWindowLongPtrW(
+          _window_handle, GWL_STYLE,
+          _is_enable
+            ? GetWindowLongPtrW( _window_handle, GWL_STYLE ) | WS_MINIMIZEBOX
+            : GetWindowLongPtrW( _window_handle, GWL_STYLE ) & ~WS_MINIMIZEBOX );
+    }
+    inline auto enable_window_maximize_ctrl( const HWND _window_handle, const bool _is_enable )
+    {
+        SetWindowLongPtrW(
+          _window_handle, GWL_STYLE,
+          _is_enable
+            ? GetWindowLongPtrW( _window_handle, GWL_STYLE ) | WS_MAXIMIZEBOX
+            : GetWindowLongPtrW( _window_handle, GWL_STYLE ) & ~WS_MAXIMIZEBOX );
+    }
+    inline auto enable_window_close_ctrl( const HWND _window_handle, const bool _is_enable )
+    {
+        EnableMenuItem(
+          GetSystemMenu( _window_handle, FALSE ), SC_CLOSE,
+          _is_enable ? MF_BYCOMMAND | MF_ENABLED : MF_BYCOMMAND | MF_DISABLED | MF_GRAYED );
     }
     namespace console_value {
-        inline constexpr auto mouse_button_left{ DWORD{ FROM_LEFT_1ST_BUTTON_PRESSED } };
-        inline constexpr auto mouse_button_middle{ DWORD{ FROM_LEFT_2ND_BUTTON_PRESSED } };
-        inline constexpr auto mouse_button_right{ DWORD{ RIGHTMOST_BUTTON_PRESSED } };
-        inline constexpr auto mouse_click{ DWORD{ 0x0000 } };
-        inline constexpr auto mouse_click_double{ DWORD{ DOUBLE_CLICK } };
-        inline constexpr auto mouse_move{ DWORD{ MOUSE_MOVED } };
-        inline constexpr auto mouse_wheel_height{ DWORD{ MOUSE_HWHEELED } };
-        inline constexpr auto mouse_wheel{ DWORD{ MOUSE_WHEELED } };
-        inline constexpr auto key_right_alt_press{ DWORD{ RIGHT_ALT_PRESSED } };
-        inline constexpr auto key_left_alt_press{ DWORD{ LEFT_ALT_PRESSED } };
-        inline constexpr auto key_right_ctrl_press{ DWORD{ RIGHT_CTRL_PRESSED } };
-        inline constexpr auto key_left_ctrl_press{ DWORD{ LEFT_CTRL_PRESSED } };
-        inline constexpr auto key_shift_press{ DWORD{ SHIFT_PRESSED } };
-        inline constexpr auto key_num_lock_on{ DWORD{ NUMLOCK_ON } };
-        inline constexpr auto key_scroll_lock_on{ DWORD{ SCROLLLOCK_ON } };
-        inline constexpr auto key_caps_lock_on{ DWORD{ CAPSLOCK_ON } };
-        inline constexpr auto key_enhanced_key{ DWORD{ ENHANCED_KEY } };
-        inline constexpr auto text_default{ WORD{ FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE } };
-        inline constexpr auto text_foreground_red{ WORD{ FOREGROUND_RED } };
-        inline constexpr auto text_foreground_green{ WORD{ FOREGROUND_GREEN } };
-        inline constexpr auto text_foreground_blue{ WORD{ FOREGROUND_BLUE } };
-        inline constexpr auto text_foreground_intensity{ WORD{ FOREGROUND_INTENSITY } };
-        inline constexpr auto text_background_red{ WORD{ BACKGROUND_RED } };
-        inline constexpr auto text_background_green{ WORD{ BACKGROUND_GREEN } };
-        inline constexpr auto text_background_blue{ WORD{ BACKGROUND_BLUE } };
-        inline constexpr auto text_background_intensity{ WORD{ BACKGROUND_INTENSITY } };
-        inline constexpr auto text_lvb_leading_byte{ WORD{ COMMON_LVB_LEADING_BYTE } };
-        inline constexpr auto text_lvb_trailing_byte{ WORD{ COMMON_LVB_TRAILING_BYTE } };
-        inline constexpr auto text_lvb_grid_horizontal{ WORD{ COMMON_LVB_GRID_HORIZONTAL } };
-        inline constexpr auto text_lvb_grid_lvertical{ WORD{ COMMON_LVB_GRID_LVERTICAL } };
-        inline constexpr auto text_lvb_grid_rvertical{ WORD{ COMMON_LVB_GRID_RVERTICAL } };
-        inline constexpr auto text_lvb_reverse_video{ WORD{ COMMON_LVB_REVERSE_VIDEO } };
-        inline constexpr auto text_lvb_underscore{ WORD{ COMMON_LVB_UNDERSCORE } };
-        inline constexpr auto text_lvb_sbcsdbcs{ WORD{ COMMON_LVB_SBCSDBCS } };
-        inline constexpr auto ui_back{ false };
-        inline constexpr auto ui_quit{ true };
+        inline constexpr DWORD mouse_button_left{ FROM_LEFT_1ST_BUTTON_PRESSED };
+        inline constexpr DWORD mouse_button_middle{ FROM_LEFT_2ND_BUTTON_PRESSED };
+        inline constexpr DWORD mouse_button_right{ RIGHTMOST_BUTTON_PRESSED };
+        inline constexpr DWORD mouse_click{ 0x0000 };
+        inline constexpr DWORD mouse_click_double{ DOUBLE_CLICK };
+        inline constexpr DWORD mouse_move{ MOUSE_MOVED };
+        inline constexpr DWORD mouse_wheel_height{ MOUSE_HWHEELED };
+        inline constexpr DWORD mouse_wheel{ MOUSE_WHEELED };
+        inline constexpr DWORD key_right_alt_press{ RIGHT_ALT_PRESSED };
+        inline constexpr DWORD key_left_alt_press{ LEFT_ALT_PRESSED };
+        inline constexpr DWORD key_right_ctrl_press{ RIGHT_CTRL_PRESSED };
+        inline constexpr DWORD key_left_ctrl_press{ LEFT_CTRL_PRESSED };
+        inline constexpr DWORD key_shift_press{ SHIFT_PRESSED };
+        inline constexpr DWORD key_num_lock_on{ NUMLOCK_ON };
+        inline constexpr DWORD key_scroll_lock_on{ SCROLLLOCK_ON };
+        inline constexpr DWORD key_caps_lock_on{ CAPSLOCK_ON };
+        inline constexpr DWORD key_enhanced_key{ ENHANCED_KEY };
+        inline constexpr WORD text_default{ FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE };
+        inline constexpr WORD text_foreground_red{ FOREGROUND_RED };
+        inline constexpr WORD text_foreground_green{ FOREGROUND_GREEN };
+        inline constexpr WORD text_foreground_blue{ FOREGROUND_BLUE };
+        inline constexpr WORD text_foreground_intensity{ FOREGROUND_INTENSITY };
+        inline constexpr WORD text_background_red{ BACKGROUND_RED };
+        inline constexpr WORD text_background_green{ BACKGROUND_GREEN };
+        inline constexpr WORD text_background_blue{ BACKGROUND_BLUE };
+        inline constexpr WORD text_background_intensity{ BACKGROUND_INTENSITY };
+        inline constexpr WORD text_lvb_leading_byte{ COMMON_LVB_LEADING_BYTE };
+        inline constexpr WORD text_lvb_trailing_byte{ COMMON_LVB_TRAILING_BYTE };
+        inline constexpr WORD text_lvb_grid_horizontal{ COMMON_LVB_GRID_HORIZONTAL };
+        inline constexpr WORD text_lvb_grid_lvertical{ COMMON_LVB_GRID_LVERTICAL };
+        inline constexpr WORD text_lvb_grid_rvertical{ COMMON_LVB_GRID_RVERTICAL };
+        inline constexpr WORD text_lvb_reverse_video{ COMMON_LVB_REVERSE_VIDEO };
+        inline constexpr WORD text_lvb_underscore{ COMMON_LVB_UNDERSCORE };
+        inline constexpr WORD text_lvb_sbcsdbcs{ COMMON_LVB_SBCSDBCS };
     };
-    template < typename _char_type_ >
-        requires( std::is_same_v< _char_type_, ansi_char > || std::is_same_v< _char_type_, utf8_char > )
     class console_ui final {
       public:
+        using func_return_type = bool;
+        inline static constexpr func_return_type back{ false };
+        inline static constexpr func_return_type exit{ true };
         struct func_args final {
-            console_ui< _char_type_ > &parent_ui;
-            const DWORD button_state, ctrl_key_state, event_flag;
-            auto operator=( const func_args & ) -> func_args & = default;
-            auto operator=( func_args && ) -> func_args &      = default;
+            console_ui &parent_ui;
+            const size_type node_index;
+            const DWORD mouse_button_state;
+            const DWORD ctrl_key_state;
+            const DWORD event_flag;
+            auto operator=( const func_args & ) noexcept -> func_args & = default;
+            auto operator=( func_args && ) noexcept -> func_args &      = default;
             func_args(
-              console_ui< _char_type_ > &_parent_ui,
-              const MOUSE_EVENT_RECORD _mouse_event = MOUSE_EVENT_RECORD{ {}, console_value::mouse_button_left, {}, {} } )
+              console_ui &_parent_ui, const size_type _node_index,
+              const MOUSE_EVENT_RECORD _mouse_event = MOUSE_EVENT_RECORD{ {}, console_value::mouse_button_left, {}, {} } ) noexcept
               : parent_ui{ _parent_ui }
-              , button_state{ _mouse_event.dwButtonState }
+              , node_index{ _node_index }
+              , mouse_button_state{ _mouse_event.dwButtonState }
               , ctrl_key_state{ _mouse_event.dwControlKeyState }
               , event_flag{ _mouse_event.dwEventFlags }
             { }
-            func_args( const func_args & ) = default;
-            func_args( func_args && )      = default;
-            ~func_args()                   = default;
+            func_args( const func_args & ) noexcept = default;
+            func_args( func_args && ) noexcept      = default;
+            ~func_args() noexcept                   = default;
         };
-        using callback_type = std::function< bool( func_args ) >;
+        using callback_type = std::function< func_return_type( func_args ) >;
       private:
         enum class console_attrs_ { normal, lock_text, lock_all };
         struct line_node_ final {
-            std_string< _char_type_ > text{};
+            ansi_std_string text{};
             callback_type func{};
-            WORD default_attrs{}, intensity_attrs{}, last_attrs{};
+            WORD default_attrs{};
+            WORD intensity_attrs{};
+            WORD last_attrs{};
             COORD position{};
-            auto set_attrs( const WORD _attrs )
+            auto set_attrs( const WORD _attrs ) noexcept
             {
                 SetConsoleTextAttribute( GetStdHandle( STD_OUTPUT_HANDLE ), _attrs );
                 last_attrs = _attrs;
             }
-            auto operator==( const COORD _mouse_position ) const
+            auto operator==( const COORD _mouse_position ) const noexcept
             {
                 return position.Y == _mouse_position.Y && position.X <= _mouse_position.X
                     && _mouse_position.X < ( position.X + static_cast< SHORT >( text.size() ) );
             }
-            auto operator!=( const COORD _mouse_position ) const
+            auto operator!=( const COORD _mouse_position ) const noexcept
             {
                 return !operator==( _mouse_position );
             }
-            auto operator=( const line_node_ & ) -> line_node_ & = default;
-            auto operator=( line_node_ && ) -> line_node_ &      = default;
-            line_node_()
+            auto operator=( const line_node_ & ) noexcept -> line_node_ & = default;
+            auto operator=( line_node_ && ) noexcept -> line_node_ &      = default;
+            line_node_() noexcept
               : default_attrs{ console_value::text_default }
               , intensity_attrs{ console_value::text_foreground_green | console_value::text_foreground_blue }
               , last_attrs{ console_value::text_default }
             { }
             line_node_(
-              const std_string_view< _char_type_ > _text, callback_type &_func, const WORD _default_attrs,
-              const WORD _intensity_attrs )
+              const ansi_std_string_view _text, callback_type &_func, const WORD _default_attrs, const WORD _intensity_attrs ) noexcept
               : text{ _text }
               , func{ std::move( _func ) }
               , default_attrs{ _default_attrs }
               , intensity_attrs{ _intensity_attrs }
               , last_attrs{ _default_attrs }
             { }
-            line_node_( const line_node_ & ) = default;
-            line_node_( line_node_ && )      = default;
-            ~line_node_()                    = default;
+            line_node_( const line_node_ & ) noexcept = default;
+            line_node_( line_node_ && ) noexcept      = default;
+            ~line_node_() noexcept                    = default;
         };
         std::deque< line_node_ > lines_{};
-        SHORT console_width_{}, console_height_{};
-        static auto show_cursor_( const bool _is_shown )
+        static auto show_cursor_( const WINBOOL _is_show ) noexcept
         {
-            auto cursor_data{ CONSOLE_CURSOR_INFO{} };
+            CONSOLE_CURSOR_INFO cursor_data;
             GetConsoleCursorInfo( GetStdHandle( STD_OUTPUT_HANDLE ), &cursor_data );
-            cursor_data.bVisible = _is_shown;
+            cursor_data.bVisible = _is_show;
             SetConsoleCursorInfo( GetStdHandle( STD_OUTPUT_HANDLE ), &cursor_data );
         }
-        static auto edit_console_attrs_( const console_attrs_ _mod )
+        static auto edit_console_attrs_( const console_attrs_ _attrs ) noexcept
         {
-            auto attrs{ DWORD{} };
+            DWORD attrs;
             GetConsoleMode( GetStdHandle( STD_INPUT_HANDLE ), &attrs );
-            switch ( _mod ) {
+            switch ( _attrs ) {
                 case console_attrs_::normal :
                     attrs |= ENABLE_QUICK_EDIT_MODE;
                     attrs |= ENABLE_INSERT_MODE;
@@ -546,71 +1019,58 @@ namespace cpp_utils {
             }
             SetConsoleMode( GetStdHandle( STD_INPUT_HANDLE ), attrs );
         }
-        static auto get_cursor_()
+        static auto get_cursor_() noexcept
         {
-            auto console_data{ CONSOLE_SCREEN_BUFFER_INFO{} };
+            CONSOLE_SCREEN_BUFFER_INFO console_data;
             GetConsoleScreenBufferInfo( GetStdHandle( STD_OUTPUT_HANDLE ), &console_data );
             return console_data.dwCursorPosition;
         }
-        static auto set_cursor_( const COORD _cursor_position )
+        static auto set_cursor_( const COORD _cursor_position ) noexcept
         {
             SetConsoleCursorPosition( GetStdHandle( STD_OUTPUT_HANDLE ), _cursor_position );
         }
-        static auto wait_mouse_event_( const bool _is_mouse_moved = true )
+        static auto wait_mouse_event_( const bool _is_mouse_move = true ) noexcept
         {
-            auto record{ INPUT_RECORD{} };
-            auto reg{ DWORD{} };
+            using namespace std::chrono_literals;
+            INPUT_RECORD record;
+            DWORD reg;
             while ( true ) {
-                perf_sleep( 10ms );
+                std::this_thread::sleep_for( 10ms );
                 ReadConsoleInputW( GetStdHandle( STD_INPUT_HANDLE ), &record, 1, &reg );
                 if ( record.EventType == MOUSE_EVENT
-                     && _is_mouse_moved | ( record.Event.MouseEvent.dwEventFlags != console_value::mouse_move ) )
+                     && ( _is_mouse_move || record.Event.MouseEvent.dwEventFlags != console_value::mouse_move ) )
                 {
                     return record.Event.MouseEvent;
                 }
             }
         }
-        auto get_console_size_()
+        static auto get_console_size_() noexcept
         {
-            auto console_data{ CONSOLE_SCREEN_BUFFER_INFO{} };
+            CONSOLE_SCREEN_BUFFER_INFO console_data;
             GetConsoleScreenBufferInfo( GetStdHandle( STD_OUTPUT_HANDLE ), &console_data );
-            console_height_ = console_data.dwSize.Y;
-            console_width_  = console_data.dwSize.X;
+            return console_data.dwSize;
         }
-        auto cls_()
+        static auto cls_()
         {
-            get_console_size_();
-            set_cursor_( { 0, 0 } );
-            if constexpr ( std::is_same_v< _char_type_, ansi_char > ) {
-                std::print(
-                  "{}",
-                  ansi_string( static_cast< size_type >( console_width_ ) * static_cast< size_type >( console_height_ ), ' ' ) );
-            } else if constexpr ( std::is_same_v< _char_type_, utf8_char > ) {
-                utf8_print(
-                  u8"{}",
-                  utf8_string( static_cast< size_type >( console_width_ ) * static_cast< size_type >( console_height_ ), ' ' ) );
-            }
-            set_cursor_( { 0, 0 } );
+            auto [ width, height ]{ get_console_size_() };
+            set_cursor_( COORD{ 0, 0 } );
+            std::print( "{}", ansi_std_string( static_cast< unsigned int >( width ) * static_cast< unsigned int >( height ), ' ' ) );
+            set_cursor_( COORD{ 0, 0 } );
         }
-        static auto write_( const std_string_view< _char_type_ > _text, const bool _is_endl = false )
+        static auto write_( const ansi_std_string_view _text, const bool _is_endl = false )
         {
-            if constexpr ( std::is_same_v< _char_type_, ansi_char > ) {
-                std::print( "{}{}", _text, _is_endl ? '\n' : '\0' );
-            } else if constexpr ( std::is_same_v< _char_type_, utf8_char > ) {
-                utf8_print( u8"{}{}", _text, _is_endl ? '\n' : '\0' );
+            std::print( "{}", _text );
+            if ( _is_endl ) {
+                std::print( "\n" );
             }
         }
-        static auto rewrite_( const COORD _cursor_position, const std_string_view< _char_type_ > _text )
+        static auto rewrite_( const COORD _cursor_position, const ansi_std_string_view _text )
         {
-            set_cursor_( { 0, _cursor_position.Y } );
-            if constexpr ( std::is_same_v< _char_type_, ansi_char > ) {
-                write_( ansi_string( _cursor_position.X, ' ' ) );
-            } else if constexpr ( std::is_same_v< _char_type_, utf8_char > ) {
-                write_( utf8_string( _cursor_position.X, ' ' ) );
-            }
-            set_cursor_( { 0, _cursor_position.Y } );
+            set_cursor_( COORD{ 0, _cursor_position.Y } );
+            write_( ansi_std_string( _cursor_position.X, ' ' ) );
+            set_cursor_( COORD{ 0, _cursor_position.Y } );
             write_( _text );
-            set_cursor_( { 0, _cursor_position.Y } );
+            set_cursor_( COORD{ 0, _cursor_position.Y } );
         }
         auto init_pos_()
         {
@@ -636,8 +1096,10 @@ namespace cpp_utils {
         }
         auto call_func_( const MOUSE_EVENT_RECORD &_mouse_event )
         {
-            auto is_exited{ console_value::ui_back };
-            for ( auto &line : lines_ ) {
+            auto is_exit{ back };
+            auto size{ lines_.size() };
+            for ( size_type idx{ 0 }; idx < size; ++idx ) {
+                auto &line{ lines_[ idx ] };
                 if ( line != _mouse_event.dwMousePosition ) {
                     continue;
                 }
@@ -646,26 +1108,26 @@ namespace cpp_utils {
                 }
                 cls_();
                 line.set_attrs( line.default_attrs );
-                show_cursor_( false );
+                show_cursor_( FALSE );
                 edit_console_attrs_( console_attrs_::lock_all );
-                is_exited = line.func( func_args{ *this, _mouse_event } );
-                show_cursor_( false );
+                is_exit = line.func( func_args{ *this, idx, _mouse_event } );
+                show_cursor_( FALSE );
                 edit_console_attrs_( console_attrs_::lock_text );
                 init_pos_();
                 break;
             }
-            return is_exited;
+            return is_exit;
         }
       public:
-        auto empty() const
+        auto empty() const noexcept
         {
             return lines_.empty();
         }
-        auto size() const
+        auto size() const noexcept
         {
             return lines_.size();
         }
-        auto max_size() const
+        auto max_size() const noexcept
         {
             return lines_.max_size();
         }
@@ -674,73 +1136,78 @@ namespace cpp_utils {
             lines_.resize( _size );
             return *this;
         }
-        auto &optimize_storage()
-        {
-            lines_.shrink_to_fit();
-            return *this;
-        }
-        auto &optimize_text()
+        auto &optimize_storage() noexcept
         {
             for ( auto &line : lines_ ) {
                 line.text.shrink_to_fit();
             }
+            lines_.shrink_to_fit();
             return *this;
         }
-        auto &swap( console_ui &_src )
+        auto &swap( console_ui &_src ) noexcept
         {
             lines_.swap( _src.lines_ );
             return *this;
         }
         auto &add_front(
-          const std_string_view< _char_type_ > _text, callback_type _func = nullptr,
+          const ansi_std_string_view _text, callback_type _func = nullptr,
           const WORD _intensity_attrs = console_value::text_foreground_green | console_value::text_foreground_blue,
           const WORD _default_attrs   = console_value::text_default )
         {
-            lines_.emplace_front( line_node_{
-              _text,
-              _func,
-              _default_attrs,
-              _func != nullptr ? _intensity_attrs : _default_attrs,
-            } );
+            lines_.emplace_front( _text, _func, _default_attrs, _func != nullptr ? _intensity_attrs : _default_attrs );
             return *this;
         }
         auto &add_back(
-          const std_string_view< _char_type_ > _text, callback_type _func = nullptr,
+          const ansi_std_string_view _text, callback_type _func = nullptr,
           const WORD _intensity_attrs = console_value::text_foreground_blue | console_value::text_foreground_green,
           const WORD _default_attrs   = console_value::text_default )
         {
-            lines_.emplace_back( line_node_{
-              _text,
-              _func,
-              _default_attrs,
-              _func != nullptr ? _intensity_attrs : _default_attrs,
-            } );
+            lines_.emplace_back( _text, _func, _default_attrs, _func != nullptr ? _intensity_attrs : _default_attrs );
             return *this;
         }
         auto &insert(
-          const size_type _index, const std_string_view< _char_type_ > _text, callback_type _func = nullptr,
+          const size_type _index, const ansi_std_string_view _text, callback_type _func = nullptr,
           const WORD _intensity_attrs = console_value::text_foreground_green | console_value::text_foreground_blue,
           const WORD _default_attrs   = console_value::text_default )
         {
             lines_.emplace(
-              lines_.cbegin() + _index,
-              line_node_{ _text, _func, _default_attrs, _func != nullptr ? _intensity_attrs : _default_attrs } );
+              lines_.cbegin() + _index, _text, _func, _default_attrs, _func != nullptr ? _intensity_attrs : _default_attrs );
+            return *this;
+        }
+        auto &edit_text( const size_type _index, const ansi_std_string_view _text )
+        {
+            lines_.at( _index ).text = _text;
+            return *this;
+        }
+        auto &edit_func( const size_type _index, callback_type _func )
+        {
+            lines_.at( _index ).func = std::move( _func );
+            return *this;
+        }
+        auto &edit_intensity_attrs( const size_type _index, const WORD _intensity_attrs )
+        {
+            lines_.at( _index ).intensity_attrs = _intensity_attrs;
+            return *this;
+        }
+        auto &edit_default_attrs( const size_type _index, const WORD _default_attrs )
+        {
+            lines_.at( _index ).default_attrs = _default_attrs;
             return *this;
         }
         auto &edit(
-          const size_type _index, const std_string_view< _char_type_ > _text, callback_type _func = nullptr,
+          const size_type _index, const ansi_std_string_view _text, callback_type _func = nullptr,
           const WORD _intensity_attrs = console_value::text_foreground_green | console_value::text_foreground_blue,
           const WORD _default_attrs   = console_value::text_default )
         {
             lines_.at( _index ) = line_node_{ _text, _func, _default_attrs, _func != nullptr ? _intensity_attrs : _default_attrs };
             return *this;
         }
-        auto &remove_front()
+        auto &remove_front() noexcept
         {
             lines_.pop_front();
             return *this;
         }
-        auto &remove_back()
+        auto &remove_back() noexcept
         {
             lines_.pop_back();
             return *this;
@@ -750,19 +1217,20 @@ namespace cpp_utils {
             lines_.erase( lines_.cbegin() + _begin, lines_.cbegin() + _end );
             return *this;
         }
-        auto &clear()
+        auto &clear() noexcept
         {
             lines_.clear();
             return *this;
         }
         auto &show()
         {
-            show_cursor_( false );
+            using namespace std::chrono_literals;
+            show_cursor_( FALSE );
             edit_console_attrs_( console_attrs_::lock_text );
             init_pos_();
-            auto mouse_event{ MOUSE_EVENT_RECORD{} };
-            auto func_return_value{ console_value::ui_back };
-            while ( func_return_value == console_value::ui_back ) {
+            MOUSE_EVENT_RECORD mouse_event;
+            auto func_return_value{ back };
+            while ( func_return_value == back ) {
                 mouse_event = wait_mouse_event_();
                 switch ( mouse_event.dwEventFlags ) {
                     case console_value::mouse_move : refresh_( mouse_event.dwMousePosition ); break;
@@ -773,54 +1241,23 @@ namespace cpp_utils {
                         break;
                     }
                 }
-                perf_sleep( 10ms );
+                std::this_thread::sleep_for( 10ms );
             }
             cls_();
             return *this;
         }
-        auto &set_console(
-          const std_string_view< _char_type_ > _title, const UINT _code_page, const SHORT _width, const SHORT _height,
-          const bool _is_fixed_size, const bool _is_enabled_minimize_ctrl, const bool is_enabled_close_window_ctrl,
-          const BYTE _translucency_value )
+        auto &lock( const bool _is_hide_cursor, const bool _is_lock_text ) noexcept
         {
-            SetConsoleOutputCP( _code_page );
-            SetConsoleCP( _code_page );
-            if constexpr ( std::is_same_v< _char_type_, ansi_char > ) {
-                SetConsoleTitleA( _title.data() );
-            } else if constexpr ( std::is_same_v< _char_type_, utf8_char > ) {
-                SetConsoleTitleA( string_view_convert< ansi_char >( _title ).c_str() );
-            }
-            std::system( std::format( "mode.com con cols={} lines={}", _width, _height ).c_str() );
-            SetWindowLongPtrW(
-              GetConsoleWindow(), GWL_STYLE,
-              _is_fixed_size
-                ? GetWindowLongPtrW( GetConsoleWindow(), GWL_STYLE ) & ~WS_SIZEBOX & ~WS_MAXIMIZEBOX
-                : GetWindowLongPtrW( GetConsoleWindow(), GWL_STYLE ) | WS_SIZEBOX | WS_MAXIMIZEBOX );
-            SetWindowLongPtrW(
-              GetConsoleWindow(), GWL_STYLE,
-              _is_enabled_minimize_ctrl
-                ? GetWindowLongPtrW( GetConsoleWindow(), GWL_STYLE ) | WS_MINIMIZEBOX
-                : GetWindowLongPtrW( GetConsoleWindow(), GWL_STYLE ) & ~WS_MINIMIZEBOX );
-            EnableMenuItem(
-              GetSystemMenu( GetConsoleWindow(), FALSE ), SC_CLOSE,
-              is_enabled_close_window_ctrl ? MF_BYCOMMAND | MF_ENABLED : MF_BYCOMMAND | MF_DISABLED | MF_GRAYED );
-            SetLayeredWindowAttributes( GetConsoleWindow(), RGB( 0, 0, 0 ), _translucency_value, LWA_ALPHA );
+            show_cursor_( static_cast< WINBOOL >( !_is_hide_cursor ) );
+            edit_console_attrs_( _is_lock_text ? console_attrs_::lock_all : console_attrs_::normal );
             return *this;
         }
-        auto &lock( const bool _is_hidden_cursor, const bool _is_locked_text )
-        {
-            show_cursor_( !_is_hidden_cursor );
-            edit_console_attrs_( _is_locked_text ? console_attrs_::lock_all : console_attrs_::normal );
-            return *this;
-        }
-        auto operator=( const console_ui & ) -> console_ui & = default;
-        auto operator=( console_ui && ) -> console_ui &      = default;
-        console_ui()                                         = default;
-        console_ui( const console_ui & )                     = default;
-        console_ui( console_ui && )                          = default;
-        ~console_ui()                                        = default;
+        auto operator=( const console_ui & ) noexcept -> console_ui & = default;
+        auto operator=( console_ui && ) noexcept -> console_ui &      = default;
+        console_ui() noexcept                                         = default;
+        console_ui( const console_ui & ) noexcept                     = default;
+        console_ui( console_ui && ) noexcept                          = default;
+        ~console_ui() noexcept                                        = default;
     };
-    using console_ui_ansi = console_ui< ansi_char >;
-    using console_ui_utf8 = console_ui< utf8_char >;
 #endif
 }
