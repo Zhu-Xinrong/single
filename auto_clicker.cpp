@@ -39,7 +39,7 @@ class auto_click final {
         }
     }
 };
-using namespace std::chrono_literals;
+constexpr std::chrono::seconds one_seconds{ 1 };
 auto_click clicker;
 std::chrono::milliseconds sleep_time{};
 int click{};
@@ -50,7 +50,7 @@ auto execute( cpp_utils::console_ui::func_args )
     clicker.set( button[ 0 ], click, sleep_time );
     for ( short i{ 5 }; i >= 0; --i ) {
         std::print( " (i) 请在 {} 秒内将鼠标移动到指定位置.\r", i );
-        std::this_thread::sleep_for( 1s );
+        std::this_thread::sleep_for( one_seconds );
     }
     std::print( "\n (i) 开始执行." );
     clicker.run();
