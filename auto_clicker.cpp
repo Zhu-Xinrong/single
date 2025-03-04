@@ -102,7 +102,7 @@ auto set_button( cpp_utils::console_ui::func_args _arg )
     std::print( "按下左键 (L), 中键 (M), 还是右键 (R): " );
     while ( true ) {
         std::scanf( "%s", button );
-        if ( ( button[ 0 ] == 'L' || button[ 0 ] == 'M' || button[ 0 ] == 'R' ) && ( button[ 1 ] == '\0' ) ) {
+        if ( ( button[ 0 ] == 'L' || button[ 0 ] == 'M' || button[ 0 ] == 'R' ) && button[ 1 ] == '\0' ) {
             break;
         }
         std::print( "请输入错误, 请重新输入: " );
