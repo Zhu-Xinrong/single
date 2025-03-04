@@ -24,9 +24,7 @@ class auto_click final {
         }
     }
   public:
-    auto_click()  = default;
-    ~auto_click() = default;
-    auto set( char _button, int _click, std::chrono::milliseconds _sleep_time )
+    auto set( const char _button, const int _click, const std::chrono::milliseconds _sleep_time )
     {
         this->button_     = _button;
         this->click_      = _click;
@@ -39,13 +37,19 @@ class auto_click final {
             std::this_thread::sleep_for( sleep_time_ );
         }
     }
+    auto operator=( const auto_click & ) -> auto_click & = default;
+    auto operator=( auto_click && ) -> auto_click &      = default;
+    auto_click()                                         = default;
+    auto_click( const auto_click & )                     = default;
+    auto_click( auto_click && )                          = default;
+    ~auto_click()                                        = default;
 };
 constexpr std::chrono::seconds one_seconds{ 1 };
-auto_click clicker;
-std::chrono::milliseconds sleep_time{};
 int click{};
-short config_cnt{};
 char button[ 2 ]{};
+std::chrono::milliseconds sleep_time{};
+unsigned short config_cnt{};
+auto_click clicker;
 auto execute( cpp_utils::console_ui::func_args )
 {
     clicker.set( button[ 0 ], click, sleep_time );
@@ -53,7 +57,7 @@ auto execute( cpp_utils::console_ui::func_args )
         std::print( " (i) 请在 {} 秒内将鼠标移动到指定位置.\r", i );
         std::this_thread::sleep_for( one_seconds );
     }
-    std::print( "\n (i) 开始执行." );
+    std::print( "\n -> 开始执行." );
     clicker.run();
     return cpp_utils::console_ui::back;
 }
