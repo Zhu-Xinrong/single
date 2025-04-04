@@ -7,9 +7,12 @@ class auto_click final {
     auto execute_()
     {
         switch ( button_ ) {
-            case 'L' : mouse_event( MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0 ); break;
-            case 'M' : mouse_event( MOUSEEVENTF_MIDDLEDOWN | MOUSEEVENTF_MIDDLEUP, 0, 0, 0, 0 ); break;
-            case 'R' : mouse_event( MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0 ); break;
+            case 'L' :
+            case 'l' : mouse_event( MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0 ); break;
+            case 'M' :
+            case 'm' : mouse_event( MOUSEEVENTF_MIDDLEDOWN | MOUSEEVENTF_MIDDLEUP, 0, 0, 0, 0 ); break;
+            case 'R' :
+            case 'r' : mouse_event( MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0 ); break;
         }
     }
   public:
@@ -90,14 +93,20 @@ auto set_sleep_time( cpp_utils::console_ui::func_args _arg )
 auto set_button( cpp_utils::console_ui::func_args _arg )
 {
     _arg.parent_ui.lock( false, true );
-    std::print( "按下左键 (L), 中键 (M), 还是右键 (R): " );
+    std::print( "按下左键 (L / l), 中键 (M / m), 还是右键 (R / r): " );
     while ( true ) {
         std::scanf( "%s", button );
-        if ( ( button[ 0 ] == 'L' || button[ 0 ] == 'M' || button[ 0 ] == 'R' ) && button[ 1 ] == '\0' ) {
-            break;
+        switch ( button[ 0 ] ) {
+            case 'L' :
+            case 'l' :
+            case 'M' :
+            case 'm' :
+            case 'R' :
+            case 'r' : goto END;
+            default : std::print( "请输入错误, 请重新输入: " );
         }
-        std::print( "请输入错误, 请重新输入: " );
     }
+END:
     check( _arg );
     return cpp_utils::console_ui::back;
 }
