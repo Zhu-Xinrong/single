@@ -133,9 +133,9 @@ auto main() -> int
     ui.add_back( "                   Auto Clicker\n\n" )
       .add_back( " (i) 全部设置后即可执行.\n" )
       .add_back( " < 退出 ", quit, cpp_utils::console_text::foreground_red | cpp_utils::console_text::foreground_intensity )
-      .add_back( " > 设置点击次数 ", set_click_num )
-      .add_back( " > 设置点击间隔时间 ", set_sleep_time )
-      .add_back( " > 设置点击键 ", set_button )
+      .add_back( " > 设置 点击次数 ", set_click_num )
+      .add_back( " > 设置 点击间隔时间 ", set_sleep_time )
+      .add_back( " > 设置 点击键 ", set_button )
       .show();
     return 0;
 }
