@@ -114,6 +114,7 @@ auto main() -> int
     cpp_utils::set_console_title( "Auto Clicker" );
     cpp_utils::set_console_size( current_window_handle, std_output_handle, 50, 25 );
     cpp_utils::fix_window_size( current_window_handle, true );
+    cpp_utils::ignore_console_exit_signal( true );
     cpp_utils::enable_window_minimize_ctrl( current_window_handle, false );
     cpp_utils::enable_window_maximize_ctrl( current_window_handle, false );
     cpp_utils::console_ui ui{ std_input_handle, std_output_handle };
