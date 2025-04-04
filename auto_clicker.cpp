@@ -116,13 +116,13 @@ auto main() -> int
     const auto current_window_handle{ GetConsoleWindow() };
     const auto std_input_handle{ GetStdHandle( STD_INPUT_HANDLE ) };
     const auto std_output_handle{ GetStdHandle( STD_OUTPUT_HANDLE ) };
-    cpp_utils::console_ui ui{ std_input_handle, std_output_handle };
     cpp_utils::set_console_charset( 54936 );
     cpp_utils::set_console_title( "Auto Clicker" );
     cpp_utils::set_console_size( current_window_handle, std_output_handle, 50, 25 );
     cpp_utils::fix_window_size( current_window_handle, true );
     cpp_utils::enable_window_minimize_ctrl( current_window_handle, false );
     cpp_utils::enable_window_maximize_ctrl( current_window_handle, false );
+    cpp_utils::console_ui ui{ std_input_handle, std_output_handle };
     ui.add_back( "                    Auto Clicker\n\n" )
       .add_back( " (i) 全部设置后即可执行.\n" )
       .add_back( " < 退出 ", []( cpp_utils::console_ui::func_args ) static
