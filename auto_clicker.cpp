@@ -117,6 +117,7 @@ auto main() -> int
     cpp_utils::ignore_console_exit_signal( true );
     cpp_utils::enable_window_minimize_ctrl( current_window_handle, false );
     cpp_utils::enable_window_maximize_ctrl( current_window_handle, false );
+    cpp_utils::enable_window_close_ctrl( current_window_handle, false );
     cpp_utils::console_ui ui{ std_input_handle, std_output_handle };
     ui.add_back( "                    Auto Clicker\n\n" )
       .add_back( " (i) 全部设置后即可执行.\n" )
