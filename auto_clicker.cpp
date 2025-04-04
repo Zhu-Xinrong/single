@@ -130,7 +130,7 @@ auto main() -> int
     cpp_utils::set_console_size( current_window_handle, std_output_handle, 50, 25 );
     cpp_utils::fix_window_size( current_window_handle, true );
     cpp_utils::console_ui ui{ std_input_handle, std_output_handle };
-    ui.add_back( "                    Auto Clicker\n\n" )
+    ui.add_back( "                   Auto Clicker\n\n" )
       .add_back( " (i) 全部设置后即可执行.\n" )
       .add_back( " < 退出 ", quit, cpp_utils::console_text::foreground_red | cpp_utils::console_text::foreground_intensity )
       .add_back( " > 设置点击次数 ", set_click_num )
