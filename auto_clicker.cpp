@@ -89,7 +89,7 @@ auto set_sleep_time( cpp_utils::console_ui::func_args _arg )
             sleep_time = std::chrono::milliseconds{ tmp };
             break;
         }
-        std::print( "请输入数据必须大于 0, 请重新输入: " );
+        std::print( "数据必须大于 0, 请重新输入: " );
     }
     check( _arg );
     return cpp_utils::console_ui::back;
