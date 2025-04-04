@@ -43,14 +43,14 @@ class auto_click final {
     auto_click( auto_click && )                          = default;
     ~auto_click()                                        = default;
 };
-constexpr std::chrono::seconds one_seconds{ 1 };
+auto_click clicker;
+std::chrono::milliseconds sleep_time{};
 int click{};
 char button[ 2 ]{};
-std::chrono::milliseconds sleep_time{};
 unsigned short config_cnt{};
-auto_click clicker;
 auto execute( cpp_utils::console_ui::func_args )
 {
+    constexpr std::chrono::seconds one_seconds{ 1 };
     clicker.set( button[ 0 ], click, sleep_time );
     for ( short i{ 5 }; i >= 0; --i ) {
         std::print( " (i) 请在 {} 秒内将鼠标移动到指定位置.\r", i );
