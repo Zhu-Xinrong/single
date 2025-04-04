@@ -3,7 +3,6 @@ class auto_click final {
   private:
     char button_{};
     int click_{};
-    int counter_{};
     std::chrono::milliseconds sleep_time_{};
     auto execute_()
     {
@@ -22,7 +21,7 @@ class auto_click final {
     }
     auto run()
     {
-        for ( ; counter_ < click_; ++counter_ ) {
+        for ( decltype( click_ ) _{ 0 }; _ < click_; ++_ ) {
             execute_();
             std::this_thread::sleep_for( sleep_time_ );
         }
