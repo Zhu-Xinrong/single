@@ -8,18 +8,9 @@ class auto_click final {
     auto execute_()
     {
         switch ( button_ ) {
-            case 'L' : {
-                mouse_event( MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0 );
-                break;
-            }
-            case 'M' : {
-                mouse_event( MOUSEEVENTF_MIDDLEDOWN | MOUSEEVENTF_MIDDLEUP, 0, 0, 0, 0 );
-                break;
-            }
-            case 'R' : {
-                mouse_event( MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0 );
-                break;
-            }
+            case 'L' : mouse_event( MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0 ); break;
+            case 'M' : mouse_event( MOUSEEVENTF_MIDDLEDOWN | MOUSEEVENTF_MIDDLEUP, 0, 0, 0, 0 ); break;
+            case 'R' : mouse_event( MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0 ); break;
         }
     }
   public:
