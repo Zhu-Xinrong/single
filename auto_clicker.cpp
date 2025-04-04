@@ -97,7 +97,7 @@ auto set_sleep_time( cpp_utils::console_ui::func_args _arg ) noexcept
 auto set_button( cpp_utils::console_ui::func_args _arg ) noexcept
 {
     _arg.parent_ui.lock( false, true );
-    std::print( "按下左键 (L / l), 中键 (M / m), 还是右键 (R / r)?\n请输入: " );
+    std::print( "按下左键 (L), 中键 (M), 还是右键 (R)?\n请输入 (不区分大小写): " );
     while ( true ) {
         std::scanf( "%s", button );
         switch ( button[ 0 ] ) {
