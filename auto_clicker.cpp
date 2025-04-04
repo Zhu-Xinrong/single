@@ -93,7 +93,7 @@ auto set_sleep_time( cpp_utils::console_ui::func_args _arg )
 auto set_button( cpp_utils::console_ui::func_args _arg )
 {
     _arg.parent_ui.lock( false, true );
-    std::print( "按下左键 (L / l), 中键 (M / m), 还是右键 (R / r): " );
+    std::print( "按下左键 (L / l), 中键 (M / m), 还是右键 (R / r)?\n请输入: " );
     while ( true ) {
         std::scanf( "%s", button );
         switch ( button[ 0 ] ) {
