@@ -111,6 +111,10 @@ auto set_button( cpp_utils::console_ui::func_args _arg )
     check( _arg );
     return cpp_utils::console_ui::back;
 }
+auto quit( cpp_utils::console_ui::func_args )
+{
+    return cpp_utils::console_ui::exit;
+}
 auto main() -> int
 {
     const auto current_window_handle{ GetConsoleWindow() };
@@ -125,8 +129,7 @@ auto main() -> int
     cpp_utils::console_ui ui{ std_input_handle, std_output_handle };
     ui.add_back( "                    Auto Clicker\n\n" )
       .add_back( " (i) 全部设置后即可执行.\n" )
-      .add_back( " < 退出 ", []( cpp_utils::console_ui::func_args ) static
-    { return cpp_utils::console_ui::exit; }, cpp_utils::console_text::foreground_red | cpp_utils::console_text::foreground_intensity )
+      .add_back( " < 退出 ", quit, cpp_utils::console_text::foreground_red | cpp_utils::console_text::foreground_intensity )
       .add_back( " > 设置点击次数 ", set_click_num )
       .add_back( " > 设置点击间隔时间 ", set_sleep_time )
       .add_back( " > 设置点击键 ", set_button )
