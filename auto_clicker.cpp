@@ -36,6 +36,9 @@ class auto_click final {
     auto_click( auto_click && )                          = default;
     ~auto_click()                                        = default;
 };
+const auto current_window_handle{ GetConsoleWindow() };
+const auto std_input_handle{ GetStdHandle( STD_INPUT_HANDLE ) };
+const auto std_output_handle{ GetStdHandle( STD_OUTPUT_HANDLE ) };
 auto_click clicker;
 std::chrono::milliseconds sleep_time{};
 int click{};
@@ -49,7 +52,8 @@ auto execute( cpp_utils::console_ui::func_args )
         std::print( " (i) 请在 {} 秒内将鼠标移动到指定位置.\r", i );
         std::this_thread::sleep_for( one_seconds );
     }
-    std::print( "\n -> 开始执行." );
+    cpp_utils::clear_console_screen( std_output_handle );
+    std::print( " -> 开始执行." );
     clicker.run();
     return cpp_utils::console_ui::back;
 }
@@ -116,9 +120,6 @@ auto quit( cpp_utils::console_ui::func_args )
 }
 auto main() -> int
 {
-    const auto current_window_handle{ GetConsoleWindow() };
-    const auto std_input_handle{ GetStdHandle( STD_INPUT_HANDLE ) };
-    const auto std_output_handle{ GetStdHandle( STD_OUTPUT_HANDLE ) };
     cpp_utils::ignore_console_exit_signal( true );
     cpp_utils::enable_window_minimize_ctrl( current_window_handle, false );
     cpp_utils::enable_window_maximize_ctrl( current_window_handle, false );
