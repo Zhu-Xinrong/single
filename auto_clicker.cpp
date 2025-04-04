@@ -1,4 +1,3 @@
-#define _CRT_SECURE_NO_WARNINGS
 #include "cpp_utils.hpp"
 class auto_click final {
   private:
@@ -115,18 +114,19 @@ auto set_button( cpp_utils::console_ui::func_args _arg )
 auto main() -> int
 {
     const auto current_window_handle{ GetConsoleWindow() };
-    cpp_utils::console_ui ui;
+    const auto std_input_handle{ GetStdHandle( STD_INPUT_HANDLE ) };
+    const auto std_output_handle{ GetStdHandle( STD_OUTPUT_HANDLE ) };
+    cpp_utils::console_ui ui{ std_input_handle, std_output_handle };
     cpp_utils::set_console_title( "Auto Clicker" );
     cpp_utils::set_console_charset( 54936 );
-    cpp_utils::set_console_size( 50, 25 );
+    cpp_utils::set_console_size( current_window_handle, std_output_handle, 50, 25 );
     cpp_utils::fix_window_size( current_window_handle, true );
     cpp_utils::enable_window_minimize_ctrl( current_window_handle, false );
     cpp_utils::enable_window_maximize_ctrl( current_window_handle, false );
     ui.add_back( std::format( "                    Auto Clicker\n\n" ) )
       .add_back( " (i) 全部设置后即可执行.\n" )
-      .add_back(
-        " < 退出 ", []( cpp_utils::console_ui::func_args ) { return cpp_utils::console_ui::exit; },
-        cpp_utils::console_value::text_foreground_red | cpp_utils::console_value::text_foreground_intensity )
+      .add_back( " < 退出 ", []( cpp_utils::console_ui::func_args )
+    { return cpp_utils::console_ui::exit; }, cpp_utils::console_text::foreground_red | cpp_utils::console_text::foreground_intensity )
       .add_back( " > 设置点击次数 ", set_click_num )
       .add_back( " > 设置点击间隔时间 ", set_sleep_time )
       .add_back( " > 设置点击键 ", set_button )
