@@ -4,7 +4,7 @@ class auto_click final {
     char button_{};
     int click_{};
     std::chrono::milliseconds sleep_time_{};
-    auto execute_()
+    auto execute_() noexcept
     {
         switch ( button_ ) {
             case 'L' :
@@ -16,25 +16,25 @@ class auto_click final {
         }
     }
   public:
-    auto set( const char _button, const int _click, const std::chrono::milliseconds _sleep_time )
+    auto set( const char _button, const int _click, const std::chrono::milliseconds _sleep_time ) noexcept
     {
         button_     = _button;
         click_      = _click;
         sleep_time_ = _sleep_time;
     }
-    auto run()
+    auto run() noexcept
     {
         for ( decltype( click_ ) _{ 0 }; _ < click_; ++_ ) {
             execute_();
             std::this_thread::sleep_for( sleep_time_ );
         }
     }
-    auto operator=( const auto_click & ) -> auto_click & = default;
-    auto operator=( auto_click && ) -> auto_click &      = default;
-    auto_click()                                         = default;
-    auto_click( const auto_click & )                     = default;
-    auto_click( auto_click && )                          = default;
-    ~auto_click()                                        = default;
+    auto operator=( const auto_click & ) noexcept -> auto_click & = default;
+    auto operator=( auto_click && ) noexcept -> auto_click &      = default;
+    auto_click() noexcept                                         = default;
+    auto_click( const auto_click & ) noexcept                     = default;
+    auto_click( auto_click && ) noexcept                          = default;
+    ~auto_click() noexcept                                        = default;
 };
 const auto current_window_handle{ GetConsoleWindow() };
 const auto std_input_handle{ GetStdHandle( STD_INPUT_HANDLE ) };
@@ -44,7 +44,7 @@ std::chrono::milliseconds sleep_time{};
 int click{};
 char button[ 2 ]{};
 unsigned short config_cnt{};
-auto execute( cpp_utils::console_ui::func_args )
+auto execute( cpp_utils::console_ui::func_args ) noexcept
 {
     constexpr std::chrono::seconds one_seconds{ 1 };
     clicker.set( button[ 0 ], click, sleep_time );
@@ -57,14 +57,14 @@ auto execute( cpp_utils::console_ui::func_args )
     clicker.run();
     return cpp_utils::console_ui::back;
 }
-auto check( cpp_utils::console_ui::func_args &_arg )
+auto check( cpp_utils::console_ui::func_args &_arg ) noexcept
 {
     ++config_cnt;
     if ( config_cnt == 3 ) {
         _arg.parent_ui.remove( 1, 2 ).add_back( " > 执行 ", execute );
     }
 }
-auto set_click_num( cpp_utils::console_ui::func_args _arg )
+auto set_click_num( cpp_utils::console_ui::func_args _arg ) noexcept
 {
     _arg.parent_ui.lock( false, true );
     std::print( "请输入点击次数: " );
@@ -78,7 +78,7 @@ auto set_click_num( cpp_utils::console_ui::func_args _arg )
     check( _arg );
     return cpp_utils::console_ui::back;
 }
-auto set_sleep_time( cpp_utils::console_ui::func_args _arg )
+auto set_sleep_time( cpp_utils::console_ui::func_args _arg ) noexcept
 {
     _arg.parent_ui.lock( false, true );
     std::print( "请输入间隔时间 (单位: 毫秒): " );
@@ -94,7 +94,7 @@ auto set_sleep_time( cpp_utils::console_ui::func_args _arg )
     check( _arg );
     return cpp_utils::console_ui::back;
 }
-auto set_button( cpp_utils::console_ui::func_args _arg )
+auto set_button( cpp_utils::console_ui::func_args _arg ) noexcept
 {
     _arg.parent_ui.lock( false, true );
     std::print( "按下左键 (L / l), 中键 (M / m), 还是右键 (R / r)?\n请输入: " );
@@ -114,7 +114,7 @@ END:
     check( _arg );
     return cpp_utils::console_ui::back;
 }
-auto quit( cpp_utils::console_ui::func_args )
+auto quit( cpp_utils::console_ui::func_args ) noexcept
 {
     return cpp_utils::console_ui::exit;
 }
