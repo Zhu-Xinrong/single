@@ -18,9 +18,9 @@ class auto_click final {
   public:
     auto set( const char _button, const int _click, const std::chrono::milliseconds _sleep_time )
     {
-        this->button_     = _button;
-        this->click_      = _click;
-        this->sleep_time_ = _sleep_time;
+        button_     = _button;
+        click_      = _click;
+        sleep_time_ = _sleep_time;
     }
     auto run()
     {
