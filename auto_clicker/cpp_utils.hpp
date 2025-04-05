@@ -160,8 +160,7 @@ namespace cpp_utils {
     using constant_utf16_string = constant_string< utf16_char, _capacity_ >;
     template < size_type _capacity_ >
     using constant_utf32_string = constant_string< utf32_char, _capacity_ >;
-    template < typename _type_ >
-        requires std::movable< _type_ > || std::same_as< _type_, void >
+    template < std::movable _type_ >
     class coroutine final {
       public:
         struct promise_type;
@@ -172,7 +171,8 @@ namespace cpp_utils {
       public:
         struct promise_type final {
             std::optional< return_type_ > current_value{ std::nullopt };
-            auto get_return_object()
+            std::exception_ptr current_exception{ nullptr };
+            auto get_return_object() noexcept
             {
                 return coroutine< return_type_ >{ handle_::from_promise( *this ) };
             }
@@ -197,23 +197,24 @@ namespace cpp_utils {
             auto return_value( const return_type_ &_value ) noexcept
             {
                 current_value = _value;
+                return std::suspend_always{};
             }
             auto return_value( return_type_ &&_value ) noexcept
             {
                 current_value = std::move( _value );
+                return std::suspend_always{};
             }
-            [[noreturn]]
-            static auto unhandled_exception()
+            auto unhandled_exception() noexcept
             {
-                throw;
+                current_exception = std::current_exception();
             }
             auto await_transform() -> void                               = delete;
             auto operator=( const promise_type & ) -> promise_type &     = default;
             auto operator=( promise_type && ) noexcept -> promise_type & = default;
             promise_type() noexcept                                      = default;
-            promise_type( const promise_type & )                         = default;
+            promise_type( const promise_type & ) noexcept                = default;
             promise_type( promise_type && ) noexcept                     = default;
-            ~promise_type()                                              = default;
+            ~promise_type() noexcept                                     = default;
         };
         class iterator final {
           private:
@@ -236,10 +237,6 @@ namespace cpp_utils {
             const auto &operator*() const
             {
                 return coroutine_handle_.promise().current_value.value();
-            }
-            auto operator&() const
-            {
-                return &coroutine_handle_.promise().current_value.value();
             }
             auto operator==( std::default_sentinel_t ) const
             {
@@ -278,7 +275,7 @@ namespace cpp_utils {
             }
             return *this;
         }
-        auto &reset( coroutine< return_type_ > &&_src )
+        auto &reset( coroutine< return_type_ > &&_src ) noexcept
         {
             if ( this != &_src ) {
                 if ( !empty() ) {
@@ -289,18 +286,33 @@ namespace cpp_utils {
             }
             return *this;
         }
+        auto has_exception() const noexcept
+        {
+            return coroutine_handle_.promise().current_exception != nullptr;
+        }
+        [[noreturn]] auto rethrow_exception() const
+        {
+            std::rethrow_exception( coroutine_handle_.promise().current_exception );
+        }
+        auto safe_rethrow_exception() const
+        {
+            if ( has_exception() ) {
+                std::rethrow_exception( coroutine_handle_.promise().current_exception );
+            }
+        }
         auto &resume() const
         {
             coroutine_handle_.resume();
             return *this;
         }
-        auto &safe_resume() const noexcept
+        auto &safe_resume() const
         {
             if ( empty() ) {
                 return *this;
             }
             if ( !done() ) {
                 resume();
+                safe_rethrow_exception();
             }
             return *this;
         }
@@ -312,7 +324,7 @@ namespace cpp_utils {
         {
             return coroutine_handle_.promise().current_value.value();
         }
-        const auto &const_reference_value()
+        const auto &const_reference_value() const
         {
             return coroutine_handle_.promise().current_value.value();
         }
@@ -354,8 +366,7 @@ namespace cpp_utils {
             }
         }
     };
-    template < typename _type_ >
-        requires std::movable< _type_ > || std::same_as< _type_, void >
+    template < std::movable _type_ >
     class coroutine< std::optional< _type_ > > final {
       public:
         struct promise_type;
@@ -366,7 +377,8 @@ namespace cpp_utils {
       public:
         struct promise_type final {
             return_type_ current_value{ std::nullopt };
-            auto get_return_object()
+            std::exception_ptr current_exception{ nullptr };
+            auto get_return_object() noexcept
             {
                 return coroutine< return_type_ >{ handle_::from_promise( *this ) };
             }
@@ -391,23 +403,24 @@ namespace cpp_utils {
             auto return_value( const return_type_ &_value ) noexcept
             {
                 current_value = _value;
+                return std::suspend_always{};
             }
             auto return_value( return_type_ &&_value ) noexcept
             {
                 current_value = std::move( _value );
+                return std::suspend_always{};
             }
-            [[noreturn]]
-            static auto unhandled_exception()
+            auto unhandled_exception() noexcept
             {
-                throw;
+                current_exception = std::current_exception();
             }
             auto await_transform() -> void                               = delete;
             auto operator=( const promise_type & ) -> promise_type &     = default;
             auto operator=( promise_type && ) noexcept -> promise_type & = default;
             promise_type() noexcept                                      = default;
-            promise_type( const promise_type & )                         = default;
+            promise_type( const promise_type & ) noexcept                = default;
             promise_type( promise_type && ) noexcept                     = default;
-            ~promise_type()                                              = default;
+            ~promise_type() noexcept                                     = default;
         };
         class iterator final {
           private:
@@ -430,10 +443,6 @@ namespace cpp_utils {
             const auto &operator*() const
             {
                 return coroutine_handle_.promise().current_value;
-            }
-            auto operator&() const
-            {
-                return &coroutine_handle_.promise().current_value;
             }
             auto operator==( std::default_sentinel_t ) const
             {
@@ -464,14 +473,15 @@ namespace cpp_utils {
         {
             coroutine_handle_.destroy();
         }
-        auto safe_destroy() noexcept
+        auto &safe_destroy() noexcept
         {
             if ( !empty() ) {
                 destroy();
                 coroutine_handle_ = {};
             }
+            return *this;
         }
-        auto reset( coroutine< return_type_ > &&_src )
+        auto &reset( coroutine< return_type_ > &&_src ) noexcept
         {
             if ( this != &_src ) {
                 if ( !empty() ) {
@@ -480,19 +490,35 @@ namespace cpp_utils {
                 coroutine_handle_      = _src.coroutine_handle_;
                 _src.coroutine_handle_ = {};
             }
+            return *this;
+        }
+        auto has_exception() const noexcept
+        {
+            return coroutine_handle_.promise().current_exception != nullptr;
+        }
+        [[noreturn]] auto rethrow_exception() const
+        {
+            std::rethrow_exception( coroutine_handle_.promise().current_exception );
+        }
+        auto safe_rethrow_exception() const
+        {
+            if ( has_exception() ) {
+                std::rethrow_exception( coroutine_handle_.promise().current_exception );
+            }
         }
         auto &resume() const
         {
             coroutine_handle_.resume();
             return *this;
         }
-        auto &safe_resume() const noexcept
+        auto &safe_resume() const
         {
             if ( empty() ) {
                 return *this;
             }
             if ( !done() ) {
                 resume();
+                safe_rethrow_exception();
             }
             return *this;
         }
@@ -504,7 +530,7 @@ namespace cpp_utils {
         {
             return coroutine_handle_.promise().current_value;
         }
-        const auto &const_reference_value()
+        const auto &const_reference_value() const
         {
             return coroutine_handle_.promise().current_value;
         }
@@ -529,7 +555,7 @@ namespace cpp_utils {
             reset( std::move( _src ) );
             return *this;
         }
-        coroutine() = default;
+        coroutine() noexcept = default;
         coroutine( const handle_ _coroutine_handle ) noexcept
           : coroutine_handle_{ _coroutine_handle }
         { }
@@ -546,8 +572,7 @@ namespace cpp_utils {
             }
         }
     };
-    template <>
-    class coroutine< void > final {
+    class coroutine_void final {
       public:
         struct promise_type;
       private:
@@ -555,9 +580,10 @@ namespace cpp_utils {
         handle_ coroutine_handle_{};
       public:
         struct promise_type final {
-            auto get_return_object()
+            std::exception_ptr current_exception{ nullptr };
+            auto get_return_object() noexcept
             {
-                return coroutine< void >{ handle_::from_promise( *this ) };
+                return coroutine_void{ handle_::from_promise( *this ) };
             }
             static auto initial_suspend() noexcept
             {
@@ -568,18 +594,17 @@ namespace cpp_utils {
                 return std::suspend_always{};
             }
             static auto return_void() noexcept { }
-            [[noreturn]]
-            static auto unhandled_exception()
+            auto unhandled_exception() noexcept
             {
-                throw;
+                current_exception = std::current_exception();
             }
             auto await_transform() -> void                               = delete;
             auto operator=( const promise_type & ) -> promise_type &     = default;
             auto operator=( promise_type && ) noexcept -> promise_type & = default;
             promise_type() noexcept                                      = default;
-            promise_type( const promise_type & )                         = default;
+            promise_type( const promise_type & ) noexcept                = default;
             promise_type( promise_type && ) noexcept                     = default;
-            ~promise_type()                                              = default;
+            ~promise_type() noexcept                                     = default;
         };
         auto empty() const noexcept
         {
@@ -597,14 +622,15 @@ namespace cpp_utils {
         {
             coroutine_handle_.destroy();
         }
-        auto safe_destroy() noexcept
+        auto &safe_destroy() noexcept
         {
             if ( !empty() ) {
                 destroy();
                 coroutine_handle_ = {};
             }
+            return *this;
         }
-        auto reset( coroutine< void > &&_src )
+        auto reset( coroutine_void &&_src ) noexcept
         {
             if ( this != &_src ) {
                 if ( !empty() ) {
@@ -614,38 +640,53 @@ namespace cpp_utils {
                 _src.coroutine_handle_ = {};
             }
         }
+        auto has_exception() const noexcept
+        {
+            return coroutine_handle_.promise().current_exception != nullptr;
+        }
+        [[noreturn]] auto rethrow_exception() const
+        {
+            std::rethrow_exception( coroutine_handle_.promise().current_exception );
+        }
+        auto safe_rethrow_exception() const
+        {
+            if ( has_exception() ) {
+                std::rethrow_exception( coroutine_handle_.promise().current_exception );
+            }
+        }
         auto &resume() const
         {
             coroutine_handle_.resume();
             return *this;
         }
-        auto &safe_resume() const noexcept
+        auto &safe_resume() const
         {
             if ( empty() ) {
                 return *this;
             }
             if ( !done() ) {
                 resume();
+                safe_rethrow_exception();
             }
             return *this;
         }
-        auto operator=( const coroutine< void > & ) -> coroutine< void > & = delete;
-        auto operator=( coroutine< void > &&_src ) -> coroutine< void > &
+        auto operator=( const coroutine_void & ) -> coroutine_void & = delete;
+        auto operator=( coroutine_void &&_src ) noexcept -> coroutine_void &
         {
             reset( std::move( _src ) );
             return *this;
         }
-        coroutine() noexcept = default;
-        coroutine( const handle_ _coroutine_handle ) noexcept
+        coroutine_void() noexcept = default;
+        coroutine_void( const handle_ _coroutine_handle ) noexcept
           : coroutine_handle_{ _coroutine_handle }
         { }
-        coroutine( const coroutine< void > & ) = delete;
-        coroutine( coroutine< void > &&_src ) noexcept
+        coroutine_void( const coroutine_void & ) = delete;
+        coroutine_void( coroutine_void &&_src ) noexcept
           : coroutine_handle_{ _src.coroutine_handle_ }
         {
             _src.coroutine_handle_ = {};
         }
-        ~coroutine() noexcept
+        ~coroutine_void() noexcept
         {
             if ( !empty() ) {
                 destroy();
