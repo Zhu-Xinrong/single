@@ -137,5 +137,5 @@ auto main() -> int
       .add_back( " > 设置 点击间隔时间 ", set_sleep_time )
       .add_back( " > 设置 点击键 ", set_button )
       .show();
-    return 0;
+    return EXIT_SUCCESS;
 }
