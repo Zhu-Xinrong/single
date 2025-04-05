@@ -139,11 +139,13 @@ auto main() -> int
     cpp_utils::console_ui ui{ std_input_handle, std_output_handle };
     ui.add_back( "                   Auto Clicker\n\n" )
       .add_back( " (i) 全部设置后即可执行.\n" )
-      .add_back( " < 退出 ", quit, cpp_utils::console_text::foreground_red | cpp_utils::console_text::foreground_intensity )
-      .add_back(
-        " < 以管理员权限重启 ", relaunch_as_admin,
-        cpp_utils::console_text::foreground_green | cpp_utils::console_text::foreground_intensity )
-      .add_back( " > 设置 点击次数 ", set_click_num )
+      .add_back( " < 退出 ", quit, cpp_utils::console_text::foreground_red | cpp_utils::console_text::foreground_intensity );
+    if ( !cpp_utils::is_run_as_admin() ) {
+        ui.add_back(
+          " < 以管理员权限重启 ", relaunch_as_admin,
+          cpp_utils::console_text::foreground_green | cpp_utils::console_text::foreground_intensity );
+    }
+    ui.add_back( " > 设置 点击次数 ", set_click_num )
       .add_back( " > 设置 点击间隔时间 ", set_sleep_time )
       .add_back( " > 设置 点击键 ", set_button )
       .show();
