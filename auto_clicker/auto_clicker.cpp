@@ -120,6 +120,11 @@ auto quit( cpp_utils::console_ui::func_args ) noexcept
 {
     return cpp_utils::console_ui::exit;
 }
+auto relaunch_as_admin( cpp_utils::console_ui::func_args ) noexcept
+{
+    cpp_utils::relaunch_as_admin();
+    return cpp_utils::console_ui::exit;
+}
 auto main() -> int
 {
     cpp_utils::ignore_console_exit_signal( true );
@@ -135,6 +140,9 @@ auto main() -> int
     ui.add_back( "                   Auto Clicker\n\n" )
       .add_back( " (i) 全部设置后即可执行.\n" )
       .add_back( " < 退出 ", quit, cpp_utils::console_text::foreground_red | cpp_utils::console_text::foreground_intensity )
+      .add_back(
+        " < 以管理员权限重启 ", relaunch_as_admin,
+        cpp_utils::console_text::foreground_green | cpp_utils::console_text::foreground_intensity )
       .add_back( " > 设置 点击次数 ", set_click_num )
       .add_back( " > 设置 点击间隔时间 ", set_sleep_time )
       .add_back( " > 设置 点击键 ", set_button )
