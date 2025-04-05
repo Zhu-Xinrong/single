@@ -919,9 +919,9 @@ namespace cpp_utils {
         ShellExecuteW( nullptr, L"runas", file_path, nullptr, nullptr, SW_SHOWNORMAL );
         std::exit( 0 );
     }
-    inline auto get_current_console_std_handle( const DWORD _std ) noexcept
+    inline auto get_current_console_std_handle( const DWORD _std_handle_flag ) noexcept
     {
-        return GetStdHandle( _std );
+        return GetStdHandle( _std_handle_flag );
     }
     inline auto get_current_window_handle() noexcept
     {
