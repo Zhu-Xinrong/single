@@ -6,14 +6,16 @@ class auto_click final {
     std::chrono::milliseconds sleep_time_{};
     auto execute_() noexcept
     {
+        DWORD flag;
         switch ( button_ ) {
             case 'L' :
-            case 'l' : mouse_event( MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0 ); break;
+            case 'l' : flag = MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP; break;
             case 'M' :
-            case 'm' : mouse_event( MOUSEEVENTF_MIDDLEDOWN | MOUSEEVENTF_MIDDLEUP, 0, 0, 0, 0 ); break;
+            case 'm' : flag = MOUSEEVENTF_MIDDLEDOWN | MOUSEEVENTF_MIDDLEUP; break;
             case 'R' :
-            case 'r' : mouse_event( MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0 ); break;
+            case 'r' : flag = MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_RIGHTUP; break;
         }
+        mouse_event( flag, 0, 0, 0, 0 );
     }
   public:
     auto set( const char _button, const int _click, const std::chrono::milliseconds _sleep_time ) noexcept
