@@ -145,7 +145,8 @@ auto main() -> int
           " < 以管理员权限重启 ", relaunch_as_admin,
           cpp_utils::console_text::foreground_green | cpp_utils::console_text::foreground_intensity );
     }
-    ui.add_back( " > 设置 点击次数 ", set_click_num )
+    ui.add_back( "" )
+      .add_back( " > 设置 点击次数 ", set_click_num )
       .add_back( " > 设置 点击间隔时间 ", set_sleep_time )
       .add_back( " > 设置 点击键 ", set_button )
       .show();
