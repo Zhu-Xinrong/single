@@ -51,7 +51,7 @@ auto execute( cpp_utils::console_ui::func_args ) noexcept
 {
     constexpr std::chrono::seconds one_seconds{ 1 };
     clicker.set( button[ 0 ], click, sleep_time );
-    for ( short i{ 5 }; i >= 0; --i ) {
+    for ( short i{ 5 }; i >= 1; --i ) {
         std::print( " (i) 请在 {} 秒内将鼠标移动到指定位置.\r", i );
         std::this_thread::sleep_for( one_seconds );
     }
