@@ -100,7 +100,8 @@ auto set_button( cpp_utils::console_ui::func_args _arg ) noexcept
 {
     _arg.parent_ui.lock( false, true );
     std::print( "按下左键 (L), 中键 (M), 还是右键 (R)?\n请输入 (不区分大小写): " );
-    while ( true ) {
+    bool is_ok{ false };
+    while ( !is_ok ) {
         std::scanf( "%s", button );
         switch ( button[ 0 ] ) {
             case 'L' :
@@ -108,11 +109,10 @@ auto set_button( cpp_utils::console_ui::func_args _arg ) noexcept
             case 'M' :
             case 'm' :
             case 'R' :
-            case 'r' : goto END;
+            case 'r' : is_ok = true; break;
             default : std::print( "请输入错误, 请重新输入: " );
         }
     }
-END:
     check( _arg );
     return cpp_utils::console_ui::back;
 }
