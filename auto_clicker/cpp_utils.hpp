@@ -2,37 +2,32 @@
 #if defined( _WIN32 ) || defined( _WIN64 )
 # include <windows.h>
 #endif
+#include <any>
 #include <chrono>
 #include <concepts>
 #include <coroutine>
 #include <deque>
 #include <exception>
+#include <format>
 #include <functional>
+#include <iterator>
+#include <memory>
 #include <optional>
 #include <print>
+#include <ranges>
+#include <source_location>
+#include <stacktrace>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <thread>
 #include <type_traits>
+#include <typeindex>
+#include <utility>
+#include <vector>
 namespace cpp_utils {
-    using io_buffer             = std::FILE;
-    using size_type             = std::size_t;
-    using nullptr_type          = std::nullptr_t;
-    using ansi_char             = char;
-    using ansi_std_string       = std::string;
-    using ansi_std_string_view  = std::string_view;
-    using wide_char             = wchar_t;
-    using wide_std_string       = std::wstring;
-    using wide_std_string_view  = std::wstring_view;
-    using utf8_char             = char8_t;
-    using utf8_std_string       = std::u8string;
-    using utf8_std_string_view  = std::u8string_view;
-    using utf16_char            = char16_t;
-    using utf16_std_string      = std::u16string;
-    using utf16_std_string_view = std::u16string_view;
-    using utf32_char            = char32_t;
-    using utf32_std_string      = std::u32string;
-    using utf32_std_string_view = std::u32string_view;
+    using size_type    = std::size_t;
+    using nullptr_type = std::nullptr_t;
     template < typename _type_ >
     using type_alloc = _type_;
     template < typename _char_type >
@@ -40,10 +35,12 @@ namespace cpp_utils {
     template < typename _char_type >
     using std_string_view = std::basic_string_view< _char_type >;
     template < typename _type_ >
+    using add_const_lvalue_reference_type = std::add_lvalue_reference_t< std::add_const_t< _type_ > >;
+    template < typename _type_ >
     concept char_type
-      = std::same_as< std::decay_t< _type_ >, ansi_char > || std::same_as< std::decay_t< _type_ >, wide_char >
-     || std::same_as< std::decay_t< _type_ >, utf8_char > || std::same_as< std::decay_t< _type_ >, utf16_char >
-     || std::same_as< std::decay_t< _type_ >, utf32_char >;
+      = std::same_as< std::decay_t< _type_ >, char > || std::same_as< std::decay_t< _type_ >, wchar_t >
+     || std::same_as< std::decay_t< _type_ >, char8_t > || std::same_as< std::decay_t< _type_ >, char16_t >
+     || std::same_as< std::decay_t< _type_ >, char32_t >;
     template < typename _type_ >
     concept pointer_type = std::is_pointer_v< _type_ >;
     template < typename _type_ >
@@ -61,15 +58,111 @@ namespace cpp_utils {
           || std::same_as< std::decay_t< _type_ >, std::chrono::weeks > || std::same_as< std::decay_t< _type_ >, std::chrono::months >
           || std::same_as< std::decay_t< _type_ >, std::chrono::years > );
     };
+    template < typename _msg_type_ >
+        requires( requires( _msg_type_ _m ) { std::format( "{}", _m ); } )
+    auto make_log(
+      _msg_type_ &&_msg, const std::source_location _location = std::source_location::current(),
+      const std::stacktrace _stacktrace = std::stacktrace::current() )
+    {
+        return std::format(
+          "{}({}:{}) `{}`: {}\n{}\n", _location.file_name(), _location.line(), _location.column(), _location.function_name(),
+          _msg, _stacktrace );
+    }
+    template < std::random_access_iterator _iterator_ >
+    auto parallel_for_each( _iterator_ &&_begin, _iterator_ &&_end, auto &&_func )
+    {
+        const auto max_thread_num{ std::thread::hardware_concurrency() };
+        const auto chunk_size{ ( _end - _begin ) / max_thread_num };
+        std::vector< std::thread > threads;
+        threads.reserve( max_thread_num );
+        for ( const auto i : std::ranges::iota_view{ decltype( max_thread_num ){ 0 }, max_thread_num } ) {
+            const auto chunk_start{ _begin + i * chunk_size };
+            const auto chunk_end{ ( i == max_thread_num - 1 ) ? _end : chunk_start + chunk_size };
+            threads.emplace_back( [ =, &_func ]()
+            {
+                for ( auto it{ chunk_start }; it != chunk_end; ++it ) {
+                    _func( *it );
+                }
+            } );
+        }
+        for ( auto &thread : threads ) {
+            thread.join();
+        }
+    }
+    template < std::random_access_iterator _iterator_ >
+    auto parallel_for_each( unsigned int _thread_num, _iterator_ &&_begin, _iterator_ &&_end, auto &&_func )
+    {
+        const auto chunk_size{ ( _end - _begin ) / _thread_num };
+        std::vector< std::thread > threads;
+        threads.reserve( _thread_num );
+        for ( const auto i : std::ranges::iota_view{ decltype( _thread_num ){ 0 }, _thread_num } ) {
+            const auto chunk_start{ _begin + i * chunk_size };
+            const auto chunk_end{ ( i == _thread_num - 1 ) ? _end : chunk_start + chunk_size };
+            threads.emplace_back( [ =, &_func ]()
+            {
+                for ( auto it{ chunk_start }; it != chunk_end; ++it ) {
+                    _func( *it );
+                }
+            } );
+        }
+        for ( auto &thread : threads ) {
+            thread.join();
+        }
+    }
     template < pointer_type _type_ >
-    inline auto ptr_to_string( const _type_ _ptr )
+    inline auto pointer_to_string( const _type_ _ptr )
     {
         using namespace std::string_literals;
         return _ptr == nullptr ? "nullptr"s : std::format( "0x{:x}", reinterpret_cast< std::uintptr_t >( _ptr ) );
     }
+    template < pointer_type _type_ >
+        requires( !std::same_as< std::decay_t< _type_ >, void * > && !std::is_const_v< _type_ > )
+    class raw_pointer_wrapper final {
+      private:
+        _type_ ptr_{};
+      public:
+        auto get() const
+        {
+            return ptr_;
+        }
+        auto &operator*() const
+        {
+            return *ptr_;
+        }
+        auto &operator[]( const size_type _n ) const
+        {
+            return ptr_[ _n ];
+        }
+        auto operator+( const size_type _n ) const
+        {
+            return ptr_ + _n;
+        }
+        auto operator-( const size_type _n ) const
+        {
+            return ptr_ - _n;
+        }
+        auto operator++() -> raw_pointer_wrapper< _type_ > &
+        {
+            ++ptr_;
+            return *this;
+        }
+        auto operator++( int ) -> raw_pointer_wrapper< _type_ >
+        {
+            return ptr_++;
+        }
+        auto operator=( const raw_pointer_wrapper< _type_ > & ) -> raw_pointer_wrapper< _type_ > & = default;
+        auto operator=( raw_pointer_wrapper< _type_ > && ) -> raw_pointer_wrapper< _type_ > &      = default;
+        constexpr raw_pointer_wrapper()                                                            = default;
+        constexpr raw_pointer_wrapper( _type_ _ptr )
+          : ptr_{ _ptr }
+        { }
+        constexpr raw_pointer_wrapper( const raw_pointer_wrapper< _type_ > & ) = default;
+        constexpr raw_pointer_wrapper( raw_pointer_wrapper< _type_ > && )      = default;
+        ~raw_pointer_wrapper()                                                 = default;
+    };
     template < char_type _type_, size_type _capacity_ >
         requires( std::same_as< _type_, std::decay_t< _type_ > > && _capacity_ > 0 )
-    struct constant_string final {
+    class constant_string final {
       private:
         _type_ data_[ _capacity_ ]{};
       public:
@@ -89,7 +182,7 @@ namespace cpp_utils {
             if ( src_size + 1 != _capacity_ ) {
                 return false;
             }
-            for ( size_type i{ 0 }; i < _capacity_; ++i ) {
+            for ( const auto i : std::ranges::iota_view{ decltype( _capacity_ ){ 0 }, _capacity_ } ) {
                 if ( data_[ i ] != _src[ i ] ) {
                     return false;
                 }
@@ -102,7 +195,7 @@ namespace cpp_utils {
             if ( _src_capacity_ != _capacity_ ) {
                 return false;
             }
-            for ( size_type i{ 0 }; i < _capacity_; ++i ) {
+            for ( const auto i : std::ranges::iota_view{ decltype( _capacity_ ){ 0 }, _capacity_ } ) {
                 if ( data_[ i ] != _src[ i ] ) {
                     return false;
                 }
@@ -115,7 +208,7 @@ namespace cpp_utils {
             if ( _src_capacity_ != _capacity_ ) {
                 return false;
             }
-            for ( size_type i{ 0 }; i < _capacity_; ++i ) {
+            for ( const auto i : std::ranges::iota_view{ decltype( _capacity_ ){ 0 }, _capacity_ } ) {
                 if ( data_[ i ] != _src.data_[ i ] ) {
                     return false;
                 }
@@ -148,18 +241,167 @@ namespace cpp_utils {
         }
         consteval constant_string( const constant_string< _type_, _capacity_ > & )     = default;
         consteval constant_string( constant_string< _type_, _capacity_ > && ) noexcept = delete;
-        consteval ~constant_string() noexcept                                          = default;
+        ~constant_string() noexcept                                                    = default;
     };
     template < size_type _capacity_ >
-    using constant_ansi_string = constant_string< ansi_char, _capacity_ >;
+    using constant_ansi_string = constant_string< char, _capacity_ >;
     template < size_type _capacity_ >
-    using constant_wide_string = constant_string< wide_char, _capacity_ >;
+    using constant_wide_string = constant_string< wchar_t, _capacity_ >;
     template < size_type _capacity_ >
-    using constant_utf8_string = constant_string< utf8_char, _capacity_ >;
+    using constant_utf8_string = constant_string< char8_t, _capacity_ >;
     template < size_type _capacity_ >
-    using constant_utf16_string = constant_string< utf16_char, _capacity_ >;
+    using constant_utf16_string = constant_string< char16_t, _capacity_ >;
     template < size_type _capacity_ >
-    using constant_utf32_string = constant_string< utf32_char, _capacity_ >;
+    using constant_utf32_string = constant_string< char32_t, _capacity_ >;
+#if ( defined( __GNUC__ ) && defined( __GXX_RTTI ) ) || ( defined( _MSC_VER ) && defined( _CPPRTTI ) ) \
+  || ( defined( __clang__ ) && __has_feature( cxx_rtti ) )
+    class func_wrapper_impl {
+      public:
+        virtual ~func_wrapper_impl()                                                 = default;
+        virtual auto empty() const -> bool                                           = 0;
+        virtual auto args_type() const -> const std::vector< std::type_index > &     = 0;
+        virtual auto invoke( const std::vector< std::any > &args ) const -> std::any = 0;
+    };
+    template < typename _return_type_, typename... _args_ >
+    class func_wrapper : public func_wrapper_impl {
+      private:
+        std::function< _return_type_( _args_... ) > func_;
+        std::vector< std::type_index > args_type_{ std::type_index{ typeid( _args_ ) }... };
+        template < size_type... _args_index_ >
+        auto invoke_impl_( const std::vector< std::any > &_args, std::index_sequence< _args_index_... > ) const -> std::any
+        {
+            if constexpr ( std::is_void_v< _return_type_ > ) {
+                std::invoke( func_, std::any_cast< _args_ >( _args[ _args_index_ ] )... );
+                return {};
+            } else {
+                return std::invoke( func_, std::any_cast< _args_ >( _args[ _args_index_ ] )... );
+            }
+        }
+      public:
+        virtual auto empty() const -> bool
+        {
+            return func_ == nullptr;
+        }
+        virtual auto args_type() const -> const std::vector< std::type_index > & override final
+        {
+            return args_type_;
+        }
+        virtual auto invoke( const std::vector< std::any > &_args ) const -> std::any override final
+        {
+            if ( sizeof...( _args_ ) < _args.size() ) {
+                throw std::invalid_argument{ "arguments error" };
+            }
+            return invoke_impl_( _args, std::index_sequence_for< _args_... >{} );
+        }
+        func_wrapper( std::function< _return_type_( _args_... ) > _f )
+          : func_{ std::move( _f ) }
+        { }
+    };
+    class func_container final {
+      private:
+        std::deque< std::unique_ptr< func_wrapper_impl > > func_nodes_{};
+      public:
+        auto empty() const noexcept
+        {
+            return func_nodes_.empty();
+        }
+        auto size() const noexcept
+        {
+            return func_nodes_.size();
+        }
+        auto max_size() const noexcept
+        {
+            return func_nodes_.max_size();
+        }
+        auto &resize( const size_type _size )
+        {
+            func_nodes_.resize( _size );
+            return *this;
+        }
+        auto &optimize_storage() noexcept
+        {
+            func_nodes_.shrink_to_fit();
+            return *this;
+        }
+        auto &swap( func_container &_src ) noexcept
+        {
+            func_nodes_.swap( _src.func_nodes_ );
+            return *this;
+        }
+        template < typename... _args_ >
+        static auto make_args( _args_ &&..._args )
+        {
+            std::vector< std::any > args;
+            args.reserve( sizeof...( _args ) );
+            ( args.emplace_back( std::forward< _args_ >( _args ) ), ... );
+            return args;
+        }
+        template < typename _return_type_, typename... _args_ >
+        auto &add_front( std::function< _return_type_( _args_... ) > _func )
+        {
+            func_nodes_.emplace_front( std::make_unique< func_wrapper< _return_type_, _args_... > >( std::move( _func ) ) );
+            return *this;
+        }
+        template < typename _return_type_, typename... _args_ >
+        auto &add_back( std::function< _return_type_( _args_... ) > _func )
+        {
+            func_nodes_.emplace_back( std::make_unique< func_wrapper< _return_type_, _args_... > >( std::move( _func ) ) );
+            return *this;
+        }
+        template < typename _return_type_, typename... _args_ >
+        auto &insert( const size_type _index, std::function< _return_type_( _args_... ) > _func )
+        {
+            func_nodes_.emplace(
+              func_nodes_.cbegin() + _index, std::make_unique< func_wrapper< _return_type_, _args_... > >( std::move( _func ) ) );
+            return *this;
+        }
+        template < typename _return_type_, typename... _args_ >
+        auto &edit( const size_type _index, std::function< _return_type_( _args_... ) > _func )
+        {
+            func_nodes_.at( _index ) = std::make_unique< func_wrapper< _return_type_, _args_... > >( std::move( _func ) );
+            return *this;
+        }
+        auto &remove_front() noexcept
+        {
+            func_nodes_.pop_front();
+            return *this;
+        }
+        auto &remove_back() noexcept
+        {
+            func_nodes_.pop_back();
+            return *this;
+        }
+        auto &remove( const size_type _begin, const size_type _length )
+        {
+            func_nodes_.erase( func_nodes_.cbegin() + _begin, func_nodes_.cbegin() + _begin + _length );
+            return *this;
+        }
+        auto &clear() noexcept
+        {
+            func_nodes_.clear();
+            return *this;
+        }
+        template < typename _return_type_, typename... _args_ >
+        auto invoke( const size_type _index, _args_ &&..._args ) const
+        {
+            if constexpr ( std::same_as< std::decay_t< _return_type_ >, void > ) {
+                func_nodes_.at( _index )->invoke( make_args( std::forward< _args_ >( _args )... ) );
+            } else {
+                return std::any_cast< _return_type_ >(
+                  func_nodes_.at( _index )->invoke( make_args( std::forward< _args_ >( _args )... ) ) );
+            }
+        }
+        template < typename _return_type_ >
+        auto dynamic_invoke( const size_type _index, const std::vector< std::any > &_args ) const
+        {
+            if constexpr ( std::same_as< std::decay_t< _return_type_ >, void > ) {
+                func_nodes_.at( _index )->invoke( _args );
+            } else {
+                return std::any_cast< _return_type_ >( func_nodes_.at( _index )->invoke( _args ) );
+            }
+        }
+    };
+#endif
     template < std::movable _type_ >
     class coroutine final {
       public:
@@ -170,8 +412,8 @@ namespace cpp_utils {
         handle_ coroutine_handle_{};
       public:
         struct promise_type final {
-            std::optional< return_type_ > current_value{ std::nullopt };
-            std::exception_ptr current_exception{ nullptr };
+            std::optional< return_type_ > current_value{};
+            std::exception_ptr current_exception{};
             auto get_return_object() noexcept
             {
                 return coroutine< return_type_ >{ handle_::from_promise( *this ) };
@@ -208,13 +450,6 @@ namespace cpp_utils {
             {
                 current_exception = std::current_exception();
             }
-            auto await_transform() -> void                               = delete;
-            auto operator=( const promise_type & ) -> promise_type &     = default;
-            auto operator=( promise_type && ) noexcept -> promise_type & = default;
-            promise_type() noexcept                                      = default;
-            promise_type( const promise_type & ) noexcept                = default;
-            promise_type( promise_type && ) noexcept                     = default;
-            ~promise_type() noexcept                                     = default;
         };
         class iterator final {
           private:
@@ -376,8 +611,8 @@ namespace cpp_utils {
         handle_ coroutine_handle_{};
       public:
         struct promise_type final {
-            return_type_ current_value{ std::nullopt };
-            std::exception_ptr current_exception{ nullptr };
+            return_type_ current_value{};
+            std::exception_ptr current_exception{};
             auto get_return_object() noexcept
             {
                 return coroutine< return_type_ >{ handle_::from_promise( *this ) };
@@ -414,13 +649,6 @@ namespace cpp_utils {
             {
                 current_exception = std::current_exception();
             }
-            auto await_transform() -> void                               = delete;
-            auto operator=( const promise_type & ) -> promise_type &     = default;
-            auto operator=( promise_type && ) noexcept -> promise_type & = default;
-            promise_type() noexcept                                      = default;
-            promise_type( const promise_type & ) noexcept                = default;
-            promise_type( promise_type && ) noexcept                     = default;
-            ~promise_type() noexcept                                     = default;
         };
         class iterator final {
           private:
@@ -580,7 +808,7 @@ namespace cpp_utils {
         handle_ coroutine_handle_{};
       public:
         struct promise_type final {
-            std::exception_ptr current_exception{ nullptr };
+            std::exception_ptr current_exception{};
             auto get_return_object() noexcept
             {
                 return coroutine_void{ handle_::from_promise( *this ) };
@@ -598,13 +826,6 @@ namespace cpp_utils {
             {
                 current_exception = std::current_exception();
             }
-            auto await_transform() -> void                               = delete;
-            auto operator=( const promise_type & ) -> promise_type &     = default;
-            auto operator=( promise_type && ) noexcept -> promise_type & = default;
-            promise_type() noexcept                                      = default;
-            promise_type( const promise_type & ) noexcept                = default;
-            promise_type( promise_type && ) noexcept                     = default;
-            ~promise_type() noexcept                                     = default;
         };
         auto empty() const noexcept
         {
@@ -741,10 +962,10 @@ namespace cpp_utils {
         {
             return threads_.at( _index ).native_handle();
         }
-        template < callable_type _callee_, typename... _args_ >
-        auto &add( _callee_ &&_func, _args_ &&..._args )
+        template < callable_type _func_, typename... _args_ >
+        auto &add( _func_ &&_func, _args_ &&..._args )
         {
-            threads_.emplace_back( std::forward< _callee_ >( _func ), std::forward< _args_ >( _args )... );
+            threads_.emplace_back( std::forward< _func_ >( _func ), std::forward< _args_ >( _args )... );
             return *this;
         }
         auto &join( const size_type _index )
@@ -767,7 +988,7 @@ namespace cpp_utils {
             }
             return *this;
         }
-        auto &safe_join_all()
+        auto &safe_join_all() noexcept
         {
             for ( auto &thread : threads_ ) {
                 if ( thread.joinable() ) {
@@ -796,7 +1017,7 @@ namespace cpp_utils {
             }
             return *this;
         }
-        auto &safe_detach_all()
+        auto &safe_detach_all() noexcept
         {
             for ( auto &thread : threads_ ) {
                 if ( thread.joinable() ) {
@@ -817,7 +1038,7 @@ namespace cpp_utils {
         {
             return threads_.at( _index ).request_stop();
         }
-        auto &request_stop_to_all()
+        auto &request_stop_to_all() noexcept
         {
             for ( auto &thread : threads_ ) {
                 thread.request_stop();
@@ -859,7 +1080,7 @@ namespace cpp_utils {
         inline constexpr DWORD std_error{ STD_ERROR_HANDLE };
     };
     namespace console_text {
-        inline constexpr WORD default_set{ FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE };
+        inline constexpr WORD default_attrs{ FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE };
         inline constexpr WORD foreground_red{ FOREGROUND_RED };
         inline constexpr WORD foreground_green{ FOREGROUND_GREEN };
         inline constexpr WORD foreground_blue{ FOREGROUND_BLUE };
@@ -905,19 +1126,19 @@ namespace cpp_utils {
         }
         return is_admin ? true : false;
     }
-    inline auto relaunch() noexcept
+    inline auto relaunch( const int _exit_code ) noexcept
     {
-        wide_char file_path[ MAX_PATH ]{};
+        wchar_t file_path[ MAX_PATH ]{};
         GetModuleFileNameW( nullptr, file_path, MAX_PATH );
         ShellExecuteW( nullptr, L"open", file_path, nullptr, nullptr, SW_SHOWNORMAL );
-        std::exit( 0 );
+        std::exit( _exit_code );
     }
-    inline auto relaunch_as_admin() noexcept
+    inline auto relaunch_as_admin( const int _exit_code ) noexcept
     {
-        wide_char file_path[ MAX_PATH ]{};
+        wchar_t file_path[ MAX_PATH ]{};
         GetModuleFileNameW( nullptr, file_path, MAX_PATH );
         ShellExecuteW( nullptr, L"runas", file_path, nullptr, nullptr, SW_SHOWNORMAL );
-        std::exit( 0 );
+        std::exit( _exit_code );
     }
     inline auto get_current_console_std_handle( const DWORD _std_handle_flag ) noexcept
     {
@@ -958,10 +1179,10 @@ namespace cpp_utils {
         auto window_handle{ get_current_window_handle() };
         keep_window_top( window_handle, GetCurrentThreadId(), GetWindowThreadProcessId( window_handle, nullptr ) );
     }
-    template < std_chrono_type _chrono_type_, callable_type _callee_, typename... _args_ >
+    template < std_chrono_type _chrono_type_, callable_type _func_, typename... _args_ >
     inline auto loop_keep_window_top(
       const HWND _window_handle, const DWORD _thread_id, const DWORD _window_thread_process_id, const _chrono_type_ _sleep_time,
-      _callee_ &&_condition_checker, _args_ &&..._condition_checker_args )
+      _func_ &&_condition_checker, _args_ &&..._condition_checker_args )
     {
         while ( _condition_checker( std::forward< _args_ >( _condition_checker_args )... ) ) {
             AttachThreadInput( _thread_id, _window_thread_process_id, TRUE );
@@ -972,14 +1193,14 @@ namespace cpp_utils {
             std::this_thread::sleep_for( _sleep_time );
         }
     }
-    template < std_chrono_type _chrono_type_, callable_type _callee_, typename... _args_ >
+    template < std_chrono_type _chrono_type_, callable_type _func_, typename... _args_ >
     inline auto loop_keep_current_window_top(
-      const _chrono_type_ _sleep_time, _callee_ &&_condition_checker, _args_ &&..._condition_checker_args )
+      const _chrono_type_ _sleep_time, _func_ &&_condition_checker, _args_ &&..._condition_checker_args )
     {
         auto window_handle{ get_current_window_handle() };
         loop_keep_window_top(
           window_handle, GetCurrentThreadId(), GetWindowThreadProcessId( window_handle, nullptr ), _sleep_time,
-          std::forward< _callee_ >( _condition_checker ), std::forward< _args_ >( _condition_checker_args )... );
+          std::forward< _func_ >( _condition_checker ), std::forward< _args_ >( _condition_checker_args )... );
     }
     inline auto cancel_top_window( const HWND _window_handle ) noexcept
     {
@@ -1005,19 +1226,19 @@ namespace cpp_utils {
         SetConsoleMode( _std_output_handle, mode );
         std::print( "\033c" );
     }
-    inline auto set_console_title( const ansi_char *const _title ) noexcept
+    inline auto set_console_title( const char *const _title ) noexcept
     {
         SetConsoleTitleA( _title );
     }
-    inline auto set_console_title( const ansi_std_string &_title ) noexcept
+    inline auto set_console_title( const std::string &_title ) noexcept
     {
         SetConsoleTitleA( _title.data() );
     }
-    inline auto set_console_title( const wide_char *const _title ) noexcept
+    inline auto set_console_title( const wchar_t *const _title ) noexcept
     {
         SetConsoleTitleW( _title );
     }
-    inline auto set_console_title( const wide_std_string &_title ) noexcept
+    inline auto set_console_title( const std::wstring &_title ) noexcept
     {
         SetConsoleTitleW( _title.data() );
     }
@@ -1108,13 +1329,13 @@ namespace cpp_utils {
       private:
         inline static HANDLE std_input_handle_;
         inline static HANDLE std_output_handle_;
-        enum class console_attrs_ : ansi_char { normal, lock_text, lock_all };
+        enum class console_attrs_ : char { normal, lock_text, lock_all };
         struct line_node_ final {
-            ansi_std_string text{};
+            std::string text{};
             callback_type func{};
-            WORD default_attrs{};
-            WORD intensity_attrs{};
-            WORD last_attrs{};
+            WORD default_attrs{ console_text::default_attrs };
+            WORD intensity_attrs{ console_text::foreground_green | console_text::foreground_blue };
+            WORD last_attrs{ console_text::default_attrs };
             COORD position{};
             auto set_attrs( const WORD _attrs ) noexcept
             {
@@ -1132,13 +1353,8 @@ namespace cpp_utils {
             }
             auto operator=( const line_node_ & ) noexcept -> line_node_ & = default;
             auto operator=( line_node_ && ) noexcept -> line_node_ &      = default;
-            line_node_() noexcept
-              : default_attrs{ console_text::default_set }
-              , intensity_attrs{ console_text::foreground_green | console_text::foreground_blue }
-              , last_attrs{ console_text::default_set }
-            { }
-            line_node_(
-              const ansi_std_string_view _text, callback_type &_func, const WORD _default_attrs, const WORD _intensity_attrs ) noexcept
+            line_node_() noexcept                                         = default;
+            line_node_( const std::string_view _text, callback_type &_func, const WORD _default_attrs, const WORD _intensity_attrs ) noexcept
               : text{ _text }
               , func{ std::move( _func ) }
               , default_attrs{ _default_attrs }
@@ -1211,22 +1427,22 @@ namespace cpp_utils {
         }
         static auto cls_()
         {
-            auto [ width, height ]{ get_console_size_() };
+            const auto [ width, height ]{ get_console_size_() };
             set_cursor_( COORD{ 0, 0 } );
-            std::print( "{}", ansi_std_string( static_cast< unsigned int >( width ) * static_cast< unsigned int >( height ), ' ' ) );
+            std::print( "{}", std::string( static_cast< unsigned int >( width ) * static_cast< unsigned int >( height ), ' ' ) );
             set_cursor_( COORD{ 0, 0 } );
         }
-        static auto write_( const ansi_std_string_view _text, const bool _is_endl = false )
+        static auto write_( const std::string_view _text, const bool _is_endl = false )
         {
             std::print( "{}", _text );
             if ( _is_endl ) {
                 std::print( "\n" );
             }
         }
-        static auto rewrite_( const COORD _cursor_position, const ansi_std_string_view _text )
+        static auto rewrite_( const COORD _cursor_position, const std::string_view _text )
         {
             set_cursor_( COORD{ 0, _cursor_position.Y } );
-            write_( ansi_std_string( _cursor_position.X, ' ' ) );
+            write_( std::string( _cursor_position.X, ' ' ) );
             set_cursor_( COORD{ 0, _cursor_position.Y } );
             write_( _text );
             set_cursor_( COORD{ 0, _cursor_position.Y } );
@@ -1234,10 +1450,11 @@ namespace cpp_utils {
         auto init_pos_()
         {
             cls_();
+            const auto tail{ &lines_.back() };
             for ( auto &line : lines_ ) {
                 line.position = get_cursor_();
                 line.set_attrs( line.default_attrs );
-                write_( line.text, true );
+                write_( line.text, &line != tail );
             }
         }
         auto refresh_( const COORD _hang_position )
@@ -1253,11 +1470,11 @@ namespace cpp_utils {
                 }
             }
         }
-        auto call_func_( const MOUSE_EVENT_RECORD &_event )
+        auto invoke_func_( const MOUSE_EVENT_RECORD &_event )
         {
             auto is_exit{ back };
             auto size{ lines_.size() };
-            for ( size_type idx{ 0 }; idx < size; ++idx ) {
+            for ( const auto idx : std::ranges::iota_view{ decltype( size ){ 0 }, size } ) {
                 auto &line{ lines_[ idx ] };
                 if ( line != _event.dwMousePosition ) {
                     continue;
@@ -1309,31 +1526,31 @@ namespace cpp_utils {
             return *this;
         }
         auto &add_front(
-          const ansi_std_string_view _text, callback_type _func = nullptr,
+          const std::string_view _text, callback_type _func = nullptr,
           const WORD _intensity_attrs = console_text::foreground_green | console_text::foreground_blue,
-          const WORD _default_attrs   = console_text::default_set )
+          const WORD _default_attrs   = console_text::default_attrs )
         {
             lines_.emplace_front( _text, _func, _default_attrs, _func != nullptr ? _intensity_attrs : _default_attrs );
             return *this;
         }
         auto &add_back(
-          const ansi_std_string_view _text, callback_type _func = nullptr,
+          const std::string_view _text, callback_type _func = nullptr,
           const WORD _intensity_attrs = console_text::foreground_blue | console_text::foreground_green,
-          const WORD _default_attrs   = console_text::default_set )
+          const WORD _default_attrs   = console_text::default_attrs )
         {
             lines_.emplace_back( _text, _func, _default_attrs, _func != nullptr ? _intensity_attrs : _default_attrs );
             return *this;
         }
         auto &insert(
-          const size_type _index, const ansi_std_string_view _text, callback_type _func = nullptr,
+          const size_type _index, const std::string_view _text, callback_type _func = nullptr,
           const WORD _intensity_attrs = console_text::foreground_green | console_text::foreground_blue,
-          const WORD _default_attrs   = console_text::default_set )
+          const WORD _default_attrs   = console_text::default_attrs )
         {
             lines_.emplace(
               lines_.cbegin() + _index, _text, _func, _default_attrs, _func != nullptr ? _intensity_attrs : _default_attrs );
             return *this;
         }
-        auto &edit_text( const size_type _index, const ansi_std_string_view _text )
+        auto &edit_text( const size_type _index, const std::string_view _text )
         {
             lines_.at( _index ).text = _text;
             return *this;
@@ -1354,9 +1571,9 @@ namespace cpp_utils {
             return *this;
         }
         auto &edit(
-          const size_type _index, const ansi_std_string_view _text, callback_type _func = nullptr,
+          const size_type _index, const std::string_view _text, callback_type _func = nullptr,
           const WORD _intensity_attrs = console_text::foreground_green | console_text::foreground_blue,
-          const WORD _default_attrs   = console_text::default_set )
+          const WORD _default_attrs   = console_text::default_attrs )
         {
             lines_.at( _index ) = line_node_{ _text, _func, _default_attrs, _func != nullptr ? _intensity_attrs : _default_attrs };
             return *this;
@@ -1383,6 +1600,9 @@ namespace cpp_utils {
         }
         auto &show()
         {
+            if ( empty() ) {
+                return *this;
+            }
             using namespace std::chrono_literals;
             show_cursor_( FALSE );
             edit_console_attrs_( console_attrs_::lock_text );
@@ -1395,7 +1615,7 @@ namespace cpp_utils {
                     case mouse::move : refresh_( event.dwMousePosition ); break;
                     case mouse::click : {
                         if ( event.dwButtonState != false ) {
-                            func_return_value = call_func_( event );
+                            func_return_value = invoke_func_( event );
                         }
                         break;
                     }
