@@ -17,8 +17,7 @@
 
 <div align="center">
 
-更新于 2025/04/04 星期五
-由 [Zhu-Xinrong (Kendall)](https://github.com/Zhu-Xinrong "Zhu-Xinrong (Kendall) 的 GitHub 主页") 进行提交.
+更新于 2025/05/04 星期日
 
 **由于初三时间紧迫，在中考结束 (2025/06/22) 之前都很少会有维护. 感谢 [MaxLHy0424 (Mingxu Ye)](https://github.com/MaxLHy0424 "MaxLHy0424 (Mingxu Ye) 的 GitHub 主页") 抽出时间维护连点器应用.**
 
