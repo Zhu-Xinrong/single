@@ -80,7 +80,7 @@ auto set_click_num( cpp_utils::console_ui::func_args _arg ) noexcept
     while ( true ) {
         std::cin >> click;
         clear_cin_buffer();
-        if ( click > 0 ) {
+        if ( click > 0 ) [[unlikely]] {
             break;
         }
         std::print( "数据必须大于 0, 请重新输入: " );
@@ -96,7 +96,7 @@ auto set_sleep_time( cpp_utils::console_ui::func_args _arg ) noexcept
         int64_t tmp;
         std::cin >> tmp;
         clear_cin_buffer();
-        if ( tmp > 0 ) {
+        if ( tmp > 0 ) [[unlikely]] {
             sleep_time = std::chrono::milliseconds{ tmp };
             break;
         }
