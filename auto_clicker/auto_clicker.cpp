@@ -64,7 +64,7 @@ auto check( cpp_utils::console_ui::func_args &_arg ) noexcept
 {
     ++config_cnt;
     if ( config_cnt == 3 ) {
-        _arg.parent_ui.remove( 1, 2 ).add_back( " > 执行 ", execute );
+        _arg.parent_ui.edit_text( 0, "                   Auto Clicker\n\n" ).add_back( " > 执行 ", execute );
     }
 }
 auto set_click_num( cpp_utils::console_ui::func_args _arg ) noexcept
@@ -72,7 +72,7 @@ auto set_click_num( cpp_utils::console_ui::func_args _arg ) noexcept
     _arg.parent_ui.lock( false, true );
     std::print( "请输入点击次数: " );
     while ( true ) {
-        std::cin.ignore();
+        std::cin.clear();
         std::cin >> click;
         if ( click > 0 ) {
             break;
@@ -87,8 +87,8 @@ auto set_sleep_time( cpp_utils::console_ui::func_args _arg ) noexcept
     _arg.parent_ui.lock( false, true );
     std::print( "请输入间隔时间 (单位: 毫秒): " );
     while ( true ) {
-        uint64_t tmp;
-        std::cin.ignore();
+        int64_t tmp;
+        std::cin.clear();
         std::cin >> tmp;
         if ( tmp > 0 ) {
             sleep_time = std::chrono::milliseconds{ tmp };
@@ -105,7 +105,7 @@ auto set_button( cpp_utils::console_ui::func_args _arg ) noexcept
     std::print( "按下左键 (L), 中键 (M), 还是右键 (R)?\n请输入 (不区分大小写): " );
     bool is_ok{ false };
     while ( !is_ok ) {
-        std::cin.ignore();
+        std::cin.clear();
         std::cin >> button;
         switch ( button[ 0 ] ) {
             case 'L' :
@@ -142,8 +142,9 @@ auto main() -> int
     cpp_utils::fix_window_size( current_window_handle, true );
     std::ios::sync_with_stdio( false );
     cpp_utils::console_ui ui{ std_input_handle, std_output_handle };
-    ui.add_back( "                   Auto Clicker\n\n" )
-      .add_back( " (i) 全部设置后即可执行.\n" )
+    ui.add_back(
+        "                   Auto Clicker\n\n\n"
+        " (i) 全部设置后即可执行.\n" )
       .add_back( " < 退出 ", quit, cpp_utils::console_text::foreground_red | cpp_utils::console_text::foreground_intensity );
     if ( !cpp_utils::is_run_as_admin() ) {
         ui.add_back(
