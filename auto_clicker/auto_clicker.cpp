@@ -61,7 +61,7 @@ auto execute( cpp_utils::console_ui::func_args _args ) noexcept
         std::print( " (i) 请在 {} 秒内将鼠标移动到指定位置.\r", 5 - i );
         std::this_thread::sleep_for( one_seconds );
     }
-    cpp_utils::clear_console_screen( std_output_handle );
+    cpp_utils::clear_console( std_output_handle );
     std::print( " -> 开始执行." );
     clicker.run();
     return cpp_utils::console_ui::back;
