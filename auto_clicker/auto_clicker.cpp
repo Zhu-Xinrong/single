@@ -47,9 +47,15 @@ std::chrono::milliseconds sleep_time{};
 int click{};
 char button[ 2 ]{};
 unsigned short config_cnt{};
-auto execute( cpp_utils::console_ui::func_args ) noexcept
+auto clear_cin_buffer() noexcept
+{
+    std::cin.clear();
+    std::cin.ignore();
+}
+auto execute( cpp_utils::console_ui::func_args _args ) noexcept
 {
     constexpr std::chrono::seconds one_seconds{ 1 };
+    _args.parent_ui.lock( true, true );
     clicker.set( button[ 0 ], click, sleep_time );
     for ( const auto i : std::ranges::iota_view{ 0, 5 } ) {
         std::print( " (i) 请在 {} 秒内将鼠标移动到指定位置.\r", 5 - i );
@@ -72,8 +78,8 @@ auto set_click_num( cpp_utils::console_ui::func_args _arg ) noexcept
     _arg.parent_ui.lock( false, true );
     std::print( "请输入点击次数: " );
     while ( true ) {
-        std::cin.clear();
         std::cin >> click;
+        clear_cin_buffer();
         if ( click > 0 ) {
             break;
         }
@@ -88,8 +94,8 @@ auto set_sleep_time( cpp_utils::console_ui::func_args _arg ) noexcept
     std::print( "请输入间隔时间 (单位: 毫秒): " );
     while ( true ) {
         int64_t tmp;
-        std::cin.clear();
         std::cin >> tmp;
+        clear_cin_buffer();
         if ( tmp > 0 ) {
             sleep_time = std::chrono::milliseconds{ tmp };
             break;
@@ -105,8 +111,8 @@ auto set_button( cpp_utils::console_ui::func_args _arg ) noexcept
     std::print( "按下左键 (L), 中键 (M), 还是右键 (R)?\n请输入 (不区分大小写): " );
     bool is_ok{ false };
     while ( !is_ok ) {
-        std::cin.clear();
         std::cin >> button;
+        clear_cin_buffer();
         switch ( button[ 0 ] ) {
             case 'L' :
             case 'l' :
