@@ -27,7 +27,7 @@ class auto_click final {
     }
     auto run() noexcept
     {
-        for ( decltype( click_ ) _{ 0 }; _ < click_; ++_ ) {
+        for ( [[maybe_unused]] const auto _ : std::ranges::iota_view{ decltype( click_ ){ 0 }, click_ } ) {
             execute_();
             std::this_thread::sleep_for( sleep_time_ );
         }
@@ -51,8 +51,8 @@ auto execute( cpp_utils::console_ui::func_args ) noexcept
 {
     constexpr std::chrono::seconds one_seconds{ 1 };
     clicker.set( button[ 0 ], click, sleep_time );
-    for ( short i{ 5 }; i >= 1; --i ) {
-        std::print( " (i) 请在 {} 秒内将鼠标移动到指定位置.\r", i );
+    for ( const auto i : std::ranges::iota_view{ 0, 5 } ) {
+        std::print( " (i) 请在 {} 秒内将鼠标移动到指定位置.\r", 5 - i );
         std::this_thread::sleep_for( one_seconds );
     }
     cpp_utils::clear_console_screen( std_output_handle );
