@@ -953,11 +953,6 @@ namespace cpp_utils {
         {
             return threads_.max_size();
         }
-        auto &resize( const size_type _size )
-        {
-            threads_.resize( _size );
-            return *this;
-        }
         auto &optimize_storage() noexcept
         {
             threads_.shrink_to_fit();
@@ -968,50 +963,20 @@ namespace cpp_utils {
             threads_.swap( _src.threads_ );
             return *this;
         }
-        auto &swap( const size_type _index, std::jthread &_src )
-        {
-            threads_.at( _index ).swap( _src );
-            return *this;
-        }
-        auto joinable( const size_type _index ) const
-        {
-            return threads_.at( _index ).joinable();
-        }
-        auto get_id( const size_type _index ) const
-        {
-            return threads_.at( _index ).get_id();
-        }
-        auto native_handle( const size_type _index )
-        {
-            return threads_.at( _index ).native_handle();
-        }
         template < callable_type _func_, typename... _args_ >
         auto &add( _func_ &&_func, _args_ &&..._args )
         {
             threads_.emplace_back( std::forward< _func_ >( _func ), std::forward< _args_ >( _args )... );
             return *this;
         }
-        auto &join( const size_type _index )
-        {
-            threads_.at( _index ).join();
-            return *this;
-        }
-        auto &safe_join( const size_type _index )
-        {
-            auto &thread{ threads_.at( _index ) };
-            if ( thread.joinable() ) {
-                thread.join();
-            }
-            return *this;
-        }
-        auto &join_all()
+        auto &join()
         {
             for ( auto &thread : threads_ ) {
                 thread.join();
             }
             return *this;
         }
-        auto &safe_join_all() noexcept
+        auto &safe_join() noexcept
         {
             for ( auto &thread : threads_ ) {
                 if ( thread.joinable() ) {
@@ -1020,27 +985,14 @@ namespace cpp_utils {
             }
             return *this;
         }
-        auto &detach( const size_type _index )
-        {
-            threads_.at( _index ).detach();
-            return *this;
-        }
-        auto &safe_detach( const size_type _index )
-        {
-            auto &thread{ threads_.at( _index ) };
-            if ( thread.joinable() ) {
-                thread.detach();
-            }
-            return *this;
-        }
-        auto &detach_all()
+        auto &detach()
         {
             for ( auto &thread : threads_ ) {
                 thread.detach();
             }
             return *this;
         }
-        auto &safe_detach_all() noexcept
+        auto &safe_detach() noexcept
         {
             for ( auto &thread : threads_ ) {
                 if ( thread.joinable() ) {
@@ -1049,19 +1001,7 @@ namespace cpp_utils {
             }
             return *this;
         }
-        auto get_stop_source( const size_type _index )
-        {
-            return threads_.at( _index ).get_stop_source();
-        }
-        auto get_stop_token( const size_type _index ) const
-        {
-            return threads_.at( _index ).get_stop_token();
-        }
-        auto request_stop( const size_type _index )
-        {
-            return threads_.at( _index ).request_stop();
-        }
-        auto &request_stop_to_all() noexcept
+        auto &request_stop() noexcept
         {
             for ( auto &thread : threads_ ) {
                 thread.request_stop();
@@ -1443,7 +1383,7 @@ namespace cpp_utils {
             INPUT_RECORD record;
             DWORD reg;
             while ( true ) {
-                std::this_thread::sleep_for( 10ms );
+                std::this_thread::sleep_for( 50ms );
                 ReadConsoleInputW( std_input_handle_, &record, 1, &reg );
                 if ( record.EventType == MOUSE_EVENT && ( _is_move || record.Event.MouseEvent.dwEventFlags != mouse::move ) ) {
                     return record.Event.MouseEvent;
@@ -1463,14 +1403,14 @@ namespace cpp_utils {
             std::print( "{}", std::string( static_cast< unsigned int >( width ) * static_cast< unsigned int >( height ), ' ' ) );
             set_cursor_( COORD{ 0, 0 } );
         }
-        static auto write_( const std::string_view _text, const bool _is_endl = false )
+        static auto write_( const std::string &_text, const bool _is_endl = false )
         {
             std::print( "{}", _text );
             if ( _is_endl ) {
                 std::print( "\n" );
             }
         }
-        static auto rewrite_( const COORD _cursor_position, const std::string_view _text )
+        static auto rewrite_( const COORD _cursor_position, const std::string &_text )
         {
             set_cursor_( COORD{ 0, _cursor_position.Y } );
             write_( std::string( _cursor_position.X, ' ' ) );
@@ -1545,8 +1485,12 @@ namespace cpp_utils {
         }
         auto &optimize_storage() noexcept
         {
+            constexpr auto default_capacity{ std::string{}.capacity() };
             for ( auto &line : lines_ ) {
-                line.text.shrink_to_fit();
+                auto &text{ line.text };
+                if ( text.capacity() > text.size() && text.capacity() != default_capacity ) {
+                    text.shrink_to_fit();
+                }
             }
             lines_.shrink_to_fit();
             return *this;
@@ -1651,12 +1595,11 @@ namespace cpp_utils {
                         break;
                     }
                 }
-                std::this_thread::sleep_for( 10ms );
             }
             cls_();
             return *this;
         }
-        auto &lock( const bool _is_hide_cursor, const bool _is_lock_text ) noexcept
+        auto &set_limits( const bool _is_hide_cursor, const bool _is_lock_text ) noexcept
         {
             show_cursor_( static_cast< WINBOOL >( !_is_hide_cursor ) );
             edit_console_attrs_( _is_lock_text ? console_attrs_::lock_all : console_attrs_::normal );
