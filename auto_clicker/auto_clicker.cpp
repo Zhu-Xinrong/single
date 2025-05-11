@@ -132,7 +132,7 @@ auto quit( cpp_utils::console_ui::func_args ) noexcept
 }
 auto relaunch_as_admin( cpp_utils::console_ui::func_args ) noexcept
 {
-    cpp_utils::relaunch_as_admin( EXIT_SUCCESS );
+    cpp_utils::relaunch_as_admin( EXIT_SUCCESS, nullptr );
     return cpp_utils::console_ui::exit;
 }
 auto main() -> int
