@@ -1,5 +1,6 @@
 #include <iostream>
-#include "cpp_utils.hpp"
+#include "cpp_utils/windows_app_tools.hpp"
+#include "cpp_utils/windows_console_ui.hpp"
 class auto_click final {
   private:
     char button_{};
