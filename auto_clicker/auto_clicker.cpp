@@ -1,6 +1,8 @@
 #include <iostream>
 #include "cpp_utils/windows_app_tools.hpp"
 #include "cpp_utils/windows_console_ui.hpp"
+constexpr auto func_back{ cpp_utils::console_ui::func_back };
+constexpr auto func_exit{ cpp_utils::console_ui::func_exit };
 class auto_click final {
   private:
     char button_{};
@@ -65,7 +67,7 @@ auto execute( cpp_utils::console_ui::func_args _args ) noexcept
     cpp_utils::clear_console( std_output_handle );
     std::print( " -> 开始执行." );
     clicker.run();
-    return cpp_utils::console_ui::back;
+    return func_back;
 }
 auto check( cpp_utils::console_ui::func_args &_arg ) noexcept
 {
@@ -87,7 +89,7 @@ auto set_click_num( cpp_utils::console_ui::func_args _arg ) noexcept
         std::print( "数据必须大于 0, 请重新输入: " );
     }
     check( _arg );
-    return cpp_utils::console_ui::back;
+    return func_back;
 }
 auto set_sleep_time( cpp_utils::console_ui::func_args _arg ) noexcept
 {
@@ -104,7 +106,7 @@ auto set_sleep_time( cpp_utils::console_ui::func_args _arg ) noexcept
         std::print( "数据必须大于 0, 请重新输入: " );
     }
     check( _arg );
-    return cpp_utils::console_ui::back;
+    return func_back;
 }
 auto set_button( cpp_utils::console_ui::func_args _arg ) noexcept
 {
@@ -125,16 +127,16 @@ auto set_button( cpp_utils::console_ui::func_args _arg ) noexcept
         }
     }
     check( _arg );
-    return cpp_utils::console_ui::back;
+    return func_back;
 }
 auto quit( cpp_utils::console_ui::func_args ) noexcept
 {
-    return cpp_utils::console_ui::exit;
+    return func_exit;
 }
 auto relaunch_as_admin( cpp_utils::console_ui::func_args ) noexcept
 {
     cpp_utils::relaunch_as_admin( EXIT_SUCCESS, nullptr );
-    return cpp_utils::console_ui::exit;
+    return func_exit;
 }
 auto main() -> int
 {
