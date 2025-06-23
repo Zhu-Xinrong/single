@@ -3,6 +3,7 @@
 #include "cpp_utils/windows_console_ui.hpp"
 constexpr auto func_back{ cpp_utils::console_ui::func_back };
 constexpr auto func_exit{ cpp_utils::console_ui::func_exit };
+using ui_func_args = cpp_utils::console_ui::func_args;
 class auto_click final
 {
   private:
@@ -56,7 +57,7 @@ auto clear_cin_buffer() noexcept
     std::cin.clear();
     std::cin.ignore();
 }
-auto execute( cpp_utils::console_ui::func_args args ) noexcept
+auto execute( ui_func_args args ) noexcept
 {
     constexpr std::chrono::seconds one_seconds{ 1 };
     args.parent_ui.set_limits( true, true );
@@ -70,14 +71,14 @@ auto execute( cpp_utils::console_ui::func_args args ) noexcept
     clicker.run();
     return func_back;
 }
-auto check( cpp_utils::console_ui::func_args& args ) noexcept
+auto check( ui_func_args& args ) noexcept
 {
     ++config_cnt;
     if ( config_cnt == 3 ) {
         args.parent_ui.edit_text( 0, "                   Auto Clicker\n\n" ).add_back( " > 执行 ", execute );
     }
 }
-auto set_click_num( cpp_utils::console_ui::func_args args ) noexcept
+auto set_click_num( ui_func_args args ) noexcept
 {
     args.parent_ui.set_limits( false, true );
     std::print( "请输入点击次数: " );
@@ -92,7 +93,7 @@ auto set_click_num( cpp_utils::console_ui::func_args args ) noexcept
     check( args );
     return func_back;
 }
-auto set_sleep_time( cpp_utils::console_ui::func_args args ) noexcept
+auto set_sleep_time( ui_func_args args ) noexcept
 {
     args.parent_ui.set_limits( false, true );
     std::print( "请输入间隔时间 (单位: 毫秒): " );
@@ -109,7 +110,7 @@ auto set_sleep_time( cpp_utils::console_ui::func_args args ) noexcept
     check( args );
     return func_back;
 }
-auto set_button( cpp_utils::console_ui::func_args args ) noexcept
+auto set_button( ui_func_args args ) noexcept
 {
     args.parent_ui.set_limits( false, true );
     std::print( "按下左键 (L), 中键 (M), 还是右键 (R)?\n请输入 (不区分大小写): " );
@@ -130,11 +131,11 @@ auto set_button( cpp_utils::console_ui::func_args args ) noexcept
     check( args );
     return func_back;
 }
-auto quit( cpp_utils::console_ui::func_args ) noexcept
+auto quit( ui_func_args ) noexcept
 {
     return func_exit;
 }
-auto relaunch_as_admin( cpp_utils::console_ui::func_args ) noexcept
+auto relaunch_as_admin( ui_func_args ) noexcept
 {
     cpp_utils::relaunch_as_admin( EXIT_SUCCESS );
     return func_exit;
