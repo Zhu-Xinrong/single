@@ -3,7 +3,8 @@
 #include "cpp_utils/windows_console_ui.hpp"
 constexpr auto func_back{ cpp_utils::console_ui::func_back };
 constexpr auto func_exit{ cpp_utils::console_ui::func_exit };
-class auto_click final {
+class auto_click final
+{
   private:
     char button_{};
     int click_{};
@@ -140,13 +141,13 @@ auto relaunch_as_admin( cpp_utils::console_ui::func_args ) noexcept
 }
 auto main() -> int
 {
-    cpp_utils::ignore_console_exit_signal( true );
+    cpp_utils::ignore_current_console_exit_signal( true );
     cpp_utils::enable_window_minimize_ctrl( current_window_handle, false );
     cpp_utils::enable_window_maximize_ctrl( current_window_handle, false );
     cpp_utils::enable_window_close_ctrl( current_window_handle, false );
     cpp_utils::enable_window_menu( current_window_handle, false );
-    cpp_utils::set_console_charset( 54936 );
-    cpp_utils::set_console_title( "Auto Clicker" );
+    cpp_utils::set_current_console_charset( 54936 );
+    cpp_utils::set_current_console_title( "Auto Clicker" );
     cpp_utils::set_console_size( current_window_handle, std_output_handle, 50, 25 );
     cpp_utils::fix_window_size( current_window_handle, true );
     std::ios::sync_with_stdio( false );
