@@ -131,11 +131,11 @@ auto set_button( ui_func_args args ) noexcept
     check( args );
     return func_back;
 }
-auto quit( ui_func_args ) noexcept
+auto quit() noexcept
 {
     return func_exit;
 }
-auto relaunch_as_admin( ui_func_args ) noexcept
+auto relaunch_as_admin() noexcept
 {
     cpp_utils::relaunch_as_admin( EXIT_SUCCESS );
     return func_exit;
