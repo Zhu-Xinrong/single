@@ -36,12 +36,12 @@ class auto_click final
             std::this_thread::sleep_for( sleep_time_ );
         }
     }
-    auto operator=( const auto_click & ) noexcept -> auto_click & = default;
-    auto operator=( auto_click && ) noexcept -> auto_click &      = default;
-    auto_click() noexcept                                         = default;
-    auto_click( const auto_click & ) noexcept                     = default;
-    auto_click( auto_click && ) noexcept                          = default;
-    ~auto_click() noexcept                                        = default;
+    auto operator=( const auto_click& ) noexcept -> auto_click& = default;
+    auto operator=( auto_click&& ) noexcept -> auto_click&      = default;
+    auto_click() noexcept                                       = default;
+    auto_click( const auto_click& ) noexcept                    = default;
+    auto_click( auto_click&& ) noexcept                         = default;
+    ~auto_click() noexcept                                      = default;
 };
 const auto current_window_handle{ GetConsoleWindow() };
 const auto std_input_handle{ GetStdHandle( STD_INPUT_HANDLE ) };
@@ -70,7 +70,7 @@ auto execute( cpp_utils::console_ui::func_args _args ) noexcept
     clicker.run();
     return func_back;
 }
-auto check( cpp_utils::console_ui::func_args &_arg ) noexcept
+auto check( cpp_utils::console_ui::func_args& _arg ) noexcept
 {
     ++config_cnt;
     if ( config_cnt == 3 ) {
