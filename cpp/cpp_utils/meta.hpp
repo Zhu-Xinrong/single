@@ -211,10 +211,10 @@ namespace cpp_utils
             static constexpr auto value{ Holder::value };
         };
         template < auto V >
-        struct same_to_ final
+        struct is_equal_ final
         {
-            template < auto X >
-            using type = std::bool_constant< ( X == V ) >;
+            template < auto W >
+            using type = std::bool_constant< ( V == W ) >;
         };
         template < template < auto > typename F >
         struct transform_impl_ final
@@ -222,16 +222,15 @@ namespace cpp_utils
             template < typename T >
             struct apply final
             {
-                static constexpr auto value{ F< T::value >::value };
-                using type = value_holder_< value >;
+                using type = value_holder_< F< T::value >::value >;
             };
         };
       public:
         static constexpr auto size{ underlying_type_list_::size };
-        template < auto V >
-        static constexpr auto contains{ underlying_type_list_::template contains< value_holder_< V > > };
-        template < auto V >
-        static constexpr auto count{ underlying_type_list_::template count< value_holder_< V > > };
+        template < auto W >
+        static constexpr auto contains{ underlying_type_list_::template contains< value_holder_< W > > };
+        template < auto W >
+        static constexpr auto count{ underlying_type_list_::template count< value_holder_< W > > };
         template < template < auto > typename Pred >
         static constexpr auto count_if{ underlying_type_list_::template count_if< predicate_adapter_< Pred >::template predicate > };
         template < template < auto > typename Pred >
@@ -252,18 +251,18 @@ namespace cpp_utils
         template < template < auto > typename Pred >
         static constexpr auto find_last_if_not{
           underlying_type_list_::template find_last_if_not< predicate_adapter_< Pred >::template predicate > };
-        template < auto V >
-        static constexpr auto find_first{ find_first_if< same_to_< V >::template type > };
-        template < auto V >
-        static constexpr auto find_last{ find_last_if< same_to_< V >::template type > };
+        template < auto W >
+        static constexpr auto find_first{ find_first_if< is_equal_< W >::template type > };
+        template < auto W >
+        static constexpr auto find_last{ find_last_if< is_equal_< W >::template type > };
         template < size_t I >
         static constexpr auto at{ extract_value_< typename underlying_type_list_::template at< I > >::value };
         static constexpr auto front{ at< 0 > };
         static constexpr auto back{ at< size - 1 > };
-        template < auto... Us >
-        using prepend = to_value_list_< typename underlying_type_list_::template prepend< value_holder_< Us >... > >;
-        template < auto... Us >
-        using append       = to_value_list_< typename underlying_type_list_::template append< value_holder_< Us >... > >;
+        template < auto... Ws >
+        using prepend = to_value_list_< typename underlying_type_list_::template prepend< value_holder_< Ws >... > >;
+        template < auto... Ws >
+        using append       = to_value_list_< typename underlying_type_list_::template append< value_holder_< Ws >... > >;
         using remove_front = to_value_list_< typename underlying_type_list_::remove_front >;
         using remove_back  = to_value_list_< typename underlying_type_list_::remove_back >;
         template < size_t Offset, size_t Count >
@@ -340,7 +339,7 @@ namespace cpp_utils
         value_list()  = delete;
         ~value_list() = delete;
     };
-    namespace details__
+    namespace details
     {
         template < typename T >
         struct remove_identity;
@@ -366,14 +365,20 @@ namespace cpp_utils
     }
     template < typename T, size_t N >
     using make_repeated_type_list
-      = details__::remove_identity_t< decltype( details__::make_repeated_type_list_impl< T >( std::make_index_sequence< N >{} ) ) >;
+      = details::remove_identity_t< decltype( details::make_repeated_type_list_impl< T >( std::make_index_sequence< N >{} ) ) >;
     template < auto V, size_t N >
     using make_repeated_value_list
-      = details__::remove_identity_t< decltype( details__::make_repeated_value_list_impl< V >( std::make_index_sequence< N >{} ) ) >;
+      = details::remove_identity_t< decltype( details::make_repeated_value_list_impl< V >( std::make_index_sequence< N >{} ) ) >;
     template < typename >
     struct function_traits;
     template < typename R, typename... Args >
     struct function_traits< R( Args... ) > final
+    {
+        using return_type = R;
+        using args_type   = type_list< Args... >;
+    };
+    template < typename R, typename... Args >
+    struct function_traits< R ( * )( Args... ) > final
     {
         using return_type = R;
         using args_type   = type_list< Args... >;
@@ -418,7 +423,7 @@ namespace cpp_utils
         static constexpr auto matches{ true };
         using result = Result;
     };
-    namespace details__
+    namespace details
     {
         template < typename T, typename... Matchers >
         struct match_impl;
@@ -437,7 +442,7 @@ namespace cpp_utils
     template < typename T, typename... Matchers >
     struct match final
     {
-        using type = typename details__::match_impl< T, Matchers... >::type;
+        using type = typename details::match_impl< T, Matchers... >::type;
     };
     template < typename T, typename... Matchers >
     using match_t = typename match< T, Matchers... >::type;

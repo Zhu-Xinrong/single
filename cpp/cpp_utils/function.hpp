@@ -16,7 +16,7 @@ namespace cpp_utils
 {
 #if ( defined( __GNUC__ ) && defined( __GXX_RTTI ) ) || ( defined( _MSC_VER ) && defined( _CPPRTTI ) ) \
   || ( defined( __clang__ ) && __has_feature( cxx_rtti ) )
-    namespace details__
+    namespace details
     {
         class func_wrapper_impl
         {
@@ -66,17 +66,17 @@ namespace cpp_utils
     class func_container final
     {
       private:
-        std::deque< std::unique_ptr< details__::func_wrapper_impl > > func_nodes_{};
+        std::deque< std::unique_ptr< details::func_wrapper_impl > > func_nodes_{};
       public:
-        auto empty() const noexcept
+        constexpr auto empty() const noexcept
         {
             return func_nodes_.empty();
         }
-        auto size() const noexcept
+        constexpr auto size() const noexcept
         {
             return func_nodes_.size();
         }
-        auto max_size() const noexcept
+        constexpr auto max_size() const noexcept
         {
             return func_nodes_.max_size();
         }
@@ -106,57 +106,57 @@ namespace cpp_utils
         template < typename R, typename... Args >
         auto& add_front( R ( *func )( Args... ) )
         {
-            func_nodes_.emplace_front( std::make_unique< details__::func_wrapper< R, Args... > >( func ) );
+            func_nodes_.emplace_front( std::make_unique< details::func_wrapper< R, Args... > >( func ) );
             return *this;
         }
         template < typename R, typename... Args >
         auto& add_front( std::function< R( Args... ) > func )
         {
-            func_nodes_.emplace_front( std::make_unique< details__::func_wrapper< R, Args... > >( std::move( func ) ) );
+            func_nodes_.emplace_front( std::make_unique< details::func_wrapper< R, Args... > >( std::move( func ) ) );
             return *this;
         }
         template < typename R, typename... Args >
         auto& add_back( R ( *func )( Args... ) )
         {
-            func_nodes_.emplace_back( std::make_unique< details__::func_wrapper< R, Args... > >( func ) );
+            func_nodes_.emplace_back( std::make_unique< details::func_wrapper< R, Args... > >( func ) );
             return *this;
         }
         template < typename R, typename... Args >
         auto& add_back( std::function< R( Args... ) > func )
         {
-            func_nodes_.emplace_back( std::make_unique< details__::func_wrapper< R, Args... > >( std::move( func ) ) );
+            func_nodes_.emplace_back( std::make_unique< details::func_wrapper< R, Args... > >( std::move( func ) ) );
             return *this;
         }
         template < typename R, typename... Args >
         auto& insert( const size_t index, R ( *func )( Args... ) )
         {
-            func_nodes_.emplace( func_nodes_.cbegin() + index, std::make_unique< details__::func_wrapper< R, Args... > >( func ) );
+            func_nodes_.emplace( func_nodes_.cbegin() + index, std::make_unique< details::func_wrapper< R, Args... > >( func ) );
             return *this;
         }
         template < typename R, typename... Args >
         auto& insert( const size_t index, std::function< R( Args... ) > func )
         {
             func_nodes_.emplace(
-              func_nodes_.cbegin() + index, std::make_unique< details__::func_wrapper< R, Args... > >( std::move( func ) ) );
+              func_nodes_.cbegin() + index, std::make_unique< details::func_wrapper< R, Args... > >( std::move( func ) ) );
             return *this;
         }
         template < typename R, typename... Args >
         auto& edit( const size_t index, R ( *func )( Args... ) )
         {
-            if constexpr ( is_debug_build ) {
-                func_nodes_.at( index ) = std::make_unique< details__::func_wrapper< R, Args... > >( func );
+            if constexpr ( is_debugging_build ) {
+                func_nodes_.at( index ) = std::make_unique< details::func_wrapper< R, Args... > >( func );
             } else {
-                func_nodes_[ index ] = std::make_unique< details__::func_wrapper< R, Args... > >( func );
+                func_nodes_[ index ] = std::make_unique< details::func_wrapper< R, Args... > >( func );
             }
             return *this;
         }
         template < typename R, typename... Args >
         auto& edit( const size_t index, std::function< R( Args... ) > func )
         {
-            if constexpr ( is_debug_build ) {
-                func_nodes_.at( index ) = std::make_unique< details__::func_wrapper< R, Args... > >( std::move( func ) );
+            if constexpr ( is_debugging_build ) {
+                func_nodes_.at( index ) = std::make_unique< details::func_wrapper< R, Args... > >( std::move( func ) );
             } else {
-                func_nodes_[ index ] = std::make_unique< details__::func_wrapper< R, Args... > >( std::move( func ) );
+                func_nodes_[ index ] = std::make_unique< details::func_wrapper< R, Args... > >( std::move( func ) );
             }
             return *this;
         }
@@ -184,13 +184,13 @@ namespace cpp_utils
         decltype( auto ) invoke( const size_t index, Args&&... args ) const
         {
             if constexpr ( std::is_same_v< std::decay_t< R >, void > ) {
-                if constexpr ( is_debug_build ) {
+                if constexpr ( is_debugging_build ) {
                     func_nodes_.at( index )->invoke( make_args( std::forward< Args >( args )... ) );
                 } else {
                     func_nodes_[ index ]->invoke( make_args( std::forward< Args >( args )... ) );
                 }
             } else {
-                if constexpr ( is_debug_build ) {
+                if constexpr ( is_debugging_build ) {
                     return std::move( *std::any_cast< std::shared_ptr< R > >(
                       func_nodes_.at( index )->invoke( make_args( std::forward< Args >( args )... ) ) ) );
                 } else {
@@ -203,13 +203,13 @@ namespace cpp_utils
         decltype( auto ) dynamic_invoke( const size_t index, const std::vector< std::any >& args ) const
         {
             if constexpr ( std::is_same_v< std::decay_t< R >, void > ) {
-                if constexpr ( is_debug_build ) {
+                if constexpr ( is_debugging_build ) {
                     func_nodes_.at( index )->invoke( args );
                 } else {
                     func_nodes_[ index ]->invoke( args );
                 }
             } else {
-                if constexpr ( is_debug_build ) {
+                if constexpr ( is_debugging_build ) {
                     return std::move( *std::any_cast< std::shared_ptr< R > >( func_nodes_.at( index )->invoke( args ) ) );
                 } else {
                     return std::move( *std::any_cast< std::shared_ptr< R > >( func_nodes_[ index ]->invoke( args ) ) );

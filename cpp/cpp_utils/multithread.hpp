@@ -16,7 +16,7 @@ namespace cpp_utils
     inline auto parallel_for_each( thread_num_t thread_num, It&& begin, It&& end, F&& func )
     {
         if ( thread_num == 0 ) {
-            if constexpr ( is_debug_build ) {
+            if constexpr ( is_debugging_build ) {
                 std::print( "'thread_num' cannot be zero!\n" );
                 std::terminate();
             } else {
@@ -59,15 +59,15 @@ namespace cpp_utils
       private:
         std::deque< std::jthread > threads_{};
       public:
-        auto empty() const noexcept
+        constexpr auto empty() const noexcept
         {
             return threads_.empty();
         }
-        auto size() const noexcept
+        constexpr auto size() const noexcept
         {
             return threads_.size();
         }
-        auto max_size() const noexcept
+        constexpr auto max_size() const noexcept
         {
             return threads_.max_size();
         }

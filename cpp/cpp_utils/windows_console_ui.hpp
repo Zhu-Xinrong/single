@@ -150,8 +150,8 @@ namespace cpp_utils
         }
         static auto cls_()
         {
-            const auto [ width, height ]{ get_console_size_() };
             set_cursor_( COORD{ 0, 0 } );
+            const auto [ width, height ]{ get_console_size_() };
             std::print( "{}", std::string( static_cast< unsigned int >( width ) * static_cast< unsigned int >( height ), ' ' ) );
             set_cursor_( COORD{ 0, 0 } );
         }
@@ -173,14 +173,14 @@ namespace cpp_utils
         auto init_pos_()
         {
             cls_();
-            const auto tail{ &lines_.back() };
+            const auto back_ptr{ &lines_.back() };
             for ( auto& line : lines_ ) {
                 line.position = get_cursor_();
                 line.set_attrs( line.default_attrs );
-                write_( line.text, &line != tail );
+                write_( line.text, &line != back_ptr );
             }
         }
-        auto refresh_( const COORD hang_position )
+        auto refresh_( const COORD& hang_position )
         {
             for ( auto& line : lines_ ) {
                 if ( line == hang_position && line.last_attrs != line.intensity_attrs ) {
@@ -196,8 +196,7 @@ namespace cpp_utils
         auto invoke_func_( const MOUSE_EVENT_RECORD& current_event )
         {
             auto is_exit{ func_back };
-            auto size{ lines_.size() };
-            for ( const auto i : std::ranges::iota_view{ decltype( size ){ 0 }, size } ) {
+            for ( const auto i : std::ranges::iota_view{ size_t{ 0 }, lines_.size() } ) {
                 auto& line{ lines_[ i ] };
                 if ( line != current_event.dwMousePosition ) {
                     continue;
@@ -235,15 +234,15 @@ namespace cpp_utils
             return is_exit;
         }
       public:
-        auto empty() const noexcept
+        constexpr auto empty() const noexcept
         {
             return lines_.empty();
         }
-        auto size() const noexcept
+        constexpr auto size() const noexcept
         {
             return lines_.size();
         }
-        auto max_size() const noexcept
+        constexpr auto max_size() const noexcept
         {
             return lines_.max_size();
         }
@@ -301,7 +300,7 @@ namespace cpp_utils
         }
         auto& edit_text( const size_t index, const std::string_view text )
         {
-            if constexpr ( is_debug_build ) {
+            if constexpr ( is_debugging_build ) {
                 lines_.at( index ).text = text;
             } else {
                 lines_[ index ].text = text;
@@ -310,7 +309,7 @@ namespace cpp_utils
         }
         auto& edit_func( const size_t index, callback_t func )
         {
-            if constexpr ( is_debug_build ) {
+            if constexpr ( is_debugging_build ) {
                 lines_.at( index ).func = std::move( func );
             } else {
                 lines_[ index ].func = std::move( func );
@@ -319,7 +318,7 @@ namespace cpp_utils
         }
         auto& edit_intensity_attrs( const size_t index, const WORD intensity_attrs )
         {
-            if constexpr ( is_debug_build ) {
+            if constexpr ( is_debugging_build ) {
                 lines_.at( index ).intensity_attrs = intensity_attrs;
             } else {
                 lines_[ index ].intensity_attrs = intensity_attrs;
@@ -328,7 +327,7 @@ namespace cpp_utils
         }
         auto& edit_default_attrs( const size_t index, const WORD default_attrs )
         {
-            if constexpr ( is_debug_build ) {
+            if constexpr ( is_debugging_build ) {
                 lines_.at( index ).default_attrs = default_attrs;
             } else {
                 lines_[ index ].default_attrs = default_attrs;
