@@ -20,6 +20,7 @@ class auto_click final
             case 'm' : flag = MOUSEEVENTF_MIDDLEDOWN | MOUSEEVENTF_MIDDLEUP; break;
             case 'R' :
             case 'r' : flag = MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_RIGHTUP; break;
+            default : std::unreachable();
         }
         mouse_event( flag, 0, 0, 0, 0 );
     }
