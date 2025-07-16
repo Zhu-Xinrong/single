@@ -1,10 +1,11 @@
 #pragma once
 #if defined( _WIN32 ) || defined( _WIN64 )
-# include "windows_definations.hpp"
+# include "windows_definitions.hpp"
 # if true
 #  include <tlhelp32.h>
 # endif
 #endif
+#include <bit>
 #include <chrono>
 #include <concepts>
 #include <functional>
@@ -14,7 +15,6 @@
 #include <thread>
 #include <type_traits>
 #include <utility>
-#include "meta_base.hpp"
 namespace cpp_utils
 {
 #if defined( _WIN32 ) || defined( _WIN64 )
@@ -46,7 +46,7 @@ namespace cpp_utils
             DWORD bytes_needed{ 0 };
             if ( !QueryServiceConfigW( service, nullptr, 0, &bytes_needed ) && GetLastError() == ERROR_INSUFFICIENT_BUFFER ) {
                 const auto buffer{ std::make_unique< BYTE[] >( bytes_needed ) };
-                const auto config{ reinterpret_cast< LPQUERY_SERVICE_CONFIGW >( buffer.get() ) };
+                const auto config{ std::bit_cast< LPQUERY_SERVICE_CONFIGW >( buffer.get() ) };
                 if ( QueryServiceConfigW( service, config, bytes_needed, &bytes_needed ) ) {
                     if ( config->lpDependencies != nullptr && *config->lpDependencies != '\0' ) {
                         auto dependency{ config->lpDependencies };
@@ -85,7 +85,7 @@ namespace cpp_utils
             DWORD bytes_needed;
             if ( QueryServiceConfigW( service, nullptr, 0, &bytes_needed ) || GetLastError() == ERROR_INSUFFICIENT_BUFFER ) {
                 const auto buffer{ std::make_unique< BYTE[] >( bytes_needed ) };
-                const auto config{ reinterpret_cast< LPQUERY_SERVICE_CONFIGW >( buffer.get() ) };
+                const auto config{ std::bit_cast< LPQUERY_SERVICE_CONFIGW >( buffer.get() ) };
                 if ( QueryServiceConfigW( service, config, bytes_needed, &bytes_needed ) ) {
                     if ( config->lpDependencies && *config->lpDependencies ) {
                         wchar_t* context{ nullptr };
@@ -264,6 +264,23 @@ namespace cpp_utils
         CloseServiceHandle( scm );
         return result;
     }
+    inline auto press_any_key_to_continue( const HANDLE std_input_handle ) noexcept
+    {
+        DWORD mode;
+        GetConsoleMode( std_input_handle, &mode );
+        SetConsoleMode( std_input_handle, ENABLE_EXTENDED_FLAGS | ( mode & ~ENABLE_QUICK_EDIT_MODE ) );
+        FlushConsoleInputBuffer( std_input_handle );
+        INPUT_RECORD record;
+        DWORD events;
+        do {
+            ReadConsoleInputW( std_input_handle, &record, 1, &events );
+        } while ( record.EventType != KEY_EVENT || !record.Event.KeyEvent.bKeyDown );
+        SetConsoleMode( std_input_handle, mode );
+    }
+    inline auto press_any_key_to_continue() noexcept
+    {
+        press_any_key_to_continue( GetStdHandle( STD_INPUT_HANDLE ) );
+    }
     inline auto is_run_as_admin() noexcept
     {
         BOOL is_admin;
@@ -326,20 +343,15 @@ namespace cpp_utils
     {
         set_window_state( get_current_window_handle(), state );
     }
-    inline auto keep_window_top( const HWND window_handle, const DWORD thread_id, const DWORD window_thread_process_id ) noexcept
+    inline auto force_show_window( const HWND window_handle, const DWORD thread_id, const DWORD window_thread_process_id ) noexcept
     {
         AttachThreadInput( thread_id, window_thread_process_id, TRUE );
         SetForegroundWindow( window_handle );
         SetWindowPos( window_handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE );
         AttachThreadInput( thread_id, window_thread_process_id, FALSE );
     }
-    inline auto keep_current_window_top() noexcept
-    {
-        auto window_handle{ get_current_window_handle() };
-        keep_window_top( window_handle, GetCurrentThreadId(), GetWindowThreadProcessId( window_handle, nullptr ) );
-    }
     template < typename ChronoRep, typename ChronoPeriod >
-    inline auto loop_keep_window_top(
+    inline auto force_show_window_forever(
       const HWND window_handle, const DWORD thread_id, const DWORD window_thread_process_id,
       const std::chrono::duration< ChronoRep, ChronoPeriod > sleep_time )
     {
@@ -351,13 +363,13 @@ namespace cpp_utils
             std::this_thread::sleep_for( sleep_time );
         }
     }
-    template < typename ChronoRep, typename ChronoPeriod, typename F, typename... Args >
-        requires std::invocable< F, Args... >
-    inline auto loop_keep_window_top(
+    template < typename ChronoRep, typename ChronoPeriod, typename F >
+        requires std::invocable< F >
+    inline auto force_show_window_until_not(
       const HWND window_handle, const DWORD thread_id, const DWORD window_thread_process_id,
-      const std::chrono::duration< ChronoRep, ChronoPeriod > sleep_time, F&& condition_checker, Args&&... condition_checker_args )
+      const std::chrono::duration< ChronoRep, ChronoPeriod > sleep_time, F&& condition_checker )
     {
-        while ( condition_checker( std::forward< Args >( condition_checker_args )... ) ) {
+        while ( condition_checker() ) {
             AttachThreadInput( thread_id, window_thread_process_id, TRUE );
             SetForegroundWindow( window_handle );
             SetWindowPos( window_handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE );
@@ -365,29 +377,35 @@ namespace cpp_utils
             std::this_thread::sleep_for( sleep_time );
         }
     }
+    inline auto force_show_current_window() noexcept
+    {
+        auto window_handle{ get_current_window_handle() };
+        force_show_window( window_handle, GetCurrentThreadId(), GetWindowThreadProcessId( window_handle, nullptr ) );
+    }
     template < typename ChronoRep, typename ChronoPeriod >
-    inline auto loop_keep_current_window_top( const std::chrono::duration< ChronoRep, ChronoPeriod > sleep_time )
+    inline auto force_show_current_window_forever( const std::chrono::duration< ChronoRep, ChronoPeriod > sleep_time )
     {
         const auto window_handle{ get_current_window_handle() };
-        loop_keep_window_top( window_handle, GetCurrentThreadId(), GetWindowThreadProcessId( window_handle, nullptr ), sleep_time );
+        force_show_window_forever(
+          window_handle, GetCurrentThreadId(), GetWindowThreadProcessId( window_handle, nullptr ), sleep_time );
     }
-    template < typename ChronoRep, typename ChronoPeriod, typename F, typename... Args >
-        requires std::invocable< F, Args... >
-    inline auto loop_keep_current_window_top(
-      const std::chrono::duration< ChronoRep, ChronoPeriod > sleep_time, F&& condition_checker, Args&&... condition_checker_args )
+    template < typename ChronoRep, typename ChronoPeriod, typename F >
+        requires std::invocable< F >
+    inline auto
+      force_show_current_window_until_not( const std::chrono::duration< ChronoRep, ChronoPeriod > sleep_time, F&& condition_checker )
     {
         const auto window_handle{ get_current_window_handle() };
-        loop_keep_window_top(
+        force_show_window_until_not(
           window_handle, GetCurrentThreadId(), GetWindowThreadProcessId( window_handle, nullptr ), sleep_time,
-          std::forward< F >( condition_checker ), std::forward< Args >( condition_checker_args )... );
+          std::forward< F >( condition_checker ) );
     }
-    inline auto cancel_top_window( const HWND window_handle ) noexcept
+    inline auto cancel_force_show_window( const HWND window_handle ) noexcept
     {
         SetWindowPos( window_handle, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE );
     }
-    inline auto cancel_top_current_window() noexcept
+    inline auto cancel_force_show_current_window() noexcept
     {
-        cancel_top_window( get_current_window_handle() );
+        cancel_force_show_window( get_current_window_handle() );
     }
     inline auto ignore_current_console_exit_signal( const bool is_ignore ) noexcept
     {

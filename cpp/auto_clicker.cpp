@@ -60,7 +60,7 @@ auto clear_cin_buffer() noexcept
 auto execute( ui_func_args args ) noexcept
 {
     constexpr std::chrono::seconds one_seconds{ 1 };
-    args.parent_ui.set_limits( true, true );
+    args.parent_ui.set_constraints( true, true );
     clicker.set( button[ 0 ], click, sleep_time );
     for ( const auto i : std::ranges::iota_view{ 0, 5 } ) {
         std::print( " (i) 请在 {} 秒内将鼠标移动到指定位置.\r", 5 - i );
@@ -80,7 +80,7 @@ auto check( ui_func_args& args ) noexcept
 }
 auto set_click_num( ui_func_args args ) noexcept
 {
-    args.parent_ui.set_limits( false, true );
+    args.parent_ui.set_constraints( false, true );
     std::print( "请输入点击次数: " );
     while ( true ) {
         std::cin >> click;
@@ -95,7 +95,7 @@ auto set_click_num( ui_func_args args ) noexcept
 }
 auto set_sleep_time( ui_func_args args ) noexcept
 {
-    args.parent_ui.set_limits( false, true );
+    args.parent_ui.set_constraints( false, true );
     std::print( "请输入间隔时间 (单位: 毫秒): " );
     while ( true ) {
         int64_t tmp;
@@ -112,7 +112,7 @@ auto set_sleep_time( ui_func_args args ) noexcept
 }
 auto set_button( ui_func_args args ) noexcept
 {
-    args.parent_ui.set_limits( false, true );
+    args.parent_ui.set_constraints( false, true );
     std::print( "按下左键 (L), 中键 (M), 还是右键 (R)?\n请输入 (不区分大小写): " );
     bool is_ok{ false };
     while ( !is_ok ) {

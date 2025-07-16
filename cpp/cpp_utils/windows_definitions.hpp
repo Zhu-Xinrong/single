@@ -36,14 +36,15 @@ namespace cpp_utils
     }
     namespace console_text
     {
-        inline constexpr WORD default_attrs{ FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE };
         inline constexpr WORD foreground_red{ FOREGROUND_RED };
         inline constexpr WORD foreground_green{ FOREGROUND_GREEN };
         inline constexpr WORD foreground_blue{ FOREGROUND_BLUE };
+        inline constexpr WORD foreground_white{ FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE };
         inline constexpr WORD foreground_intensity{ FOREGROUND_INTENSITY };
         inline constexpr WORD background_red{ BACKGROUND_RED };
         inline constexpr WORD background_green{ BACKGROUND_GREEN };
         inline constexpr WORD background_blue{ BACKGROUND_BLUE };
+        inline constexpr WORD background_white{ BACKGROUND_RED | BACKGROUND_GREEN | BACKGROUND_BLUE };
         inline constexpr WORD background_intensity{ BACKGROUND_INTENSITY };
         inline constexpr WORD lvb_leading_byte{ COMMON_LVB_LEADING_BYTE };
         inline constexpr WORD lvb_trailing_byte{ COMMON_LVB_TRAILING_BYTE };
@@ -79,11 +80,11 @@ namespace cpp_utils
     }
     namespace registry
     {
-        inline const HKEY classes_root{ HKEY_CLASSES_ROOT };
-        inline const HKEY current_user{ HKEY_CURRENT_USER };
-        inline const HKEY current_config{ HKEY_CURRENT_CONFIG };
-        inline const HKEY local_machine{ HKEY_LOCAL_MACHINE };
-        inline const HKEY users{ HKEY_USERS };
+        inline const auto hkey_classes_root{ HKEY_CLASSES_ROOT };
+        inline const auto hkey_current_user{ HKEY_CURRENT_USER };
+        inline const auto hkey_current_config{ HKEY_CURRENT_CONFIG };
+        inline const auto hkey_local_machine{ HKEY_LOCAL_MACHINE };
+        inline const auto hkey_users{ HKEY_USERS };
         inline constexpr DWORD binary_type{ REG_BINARY };
         inline constexpr DWORD dword_type{ REG_DWORD };
         inline constexpr DWORD dword_big_endian_type{ REG_DWORD_BIG_ENDIAN };

@@ -4,7 +4,6 @@
 #include <concepts>
 #include <ranges>
 #include "compiler.hpp"
-#include "meta_base.hpp"
 namespace cpp_utils
 {
     template < typename T >
@@ -12,7 +11,7 @@ namespace cpp_utils
       = std::same_as< std::decay_t< T >, char > || std::same_as< std::decay_t< T >, wchar_t >
      || std::same_as< std::decay_t< T >, char8_t > || std::same_as< std::decay_t< T >, char16_t >
      || std::same_as< std::decay_t< T >, char32_t >;
-    template < character T, size_t N >
+    template < character T, std::size_t N >
         requires( std::same_as< T, std::decay_t< T > > && N > 0 )
     class basic_const_string final
     {
@@ -25,9 +24,17 @@ namespace cpp_utils
         }
         constexpr auto size() const noexcept
         {
-            return data_.size();
+            return N - 1;
+        }
+        constexpr auto capacity() const noexcept
+        {
+            return N;
         }
         constexpr auto max_size() const noexcept
+        {
+            return data_.max_size() - 1;
+        }
+        constexpr auto max_capacity() const noexcept
         {
             return data_.max_size();
         }
@@ -55,11 +62,11 @@ namespace cpp_utils
         {
             return data_.crend();
         }
-        constexpr const auto& operator[]( const size_t index ) const noexcept
+        constexpr const auto& operator[]( const std::size_t index ) const noexcept
         {
             return data_[ index ];
         }
-        constexpr const auto& at( const size_t index ) const noexcept
+        constexpr const auto& at( const std::size_t index ) const noexcept
         {
             if constexpr ( is_debugging_build ) {
                 return data_.at( index );
@@ -67,61 +74,46 @@ namespace cpp_utils
                 return ( *this )[ index ];
             }
         }
-        constexpr auto compare( const T* const src ) const
+        constexpr auto compare( const std::basic_string_view< T > src ) const
         {
-            if ( src == nullptr ) {
-                return false;
-            }
-            size_t src_size{ 0 };
-            while ( src[ src_size ] != '\0' ) {
-                ++src_size;
-            }
-            if ( src_size + 1 != N ) {
-                return false;
-            }
-            for ( const auto i : std::ranges::iota_view{ decltype( N ){ 0 }, N } ) {
-                if ( data_[ i ] != src[ i ] ) {
-                    return false;
-                }
-            }
-            return true;
+            return src == this->data();
         }
-        template < size_t SrcN >
+        template < std::size_t SrcN >
         constexpr auto compare( const T ( &src )[ SrcN ] ) const noexcept
         {
             if ( SrcN != N ) {
                 return false;
             }
-            for ( const auto i : std::ranges::iota_view{ decltype( N ){ 0 }, N } ) {
+            for ( decltype( N ) i{ 0 }; i < N; ++i ) {
                 if ( data_[ i ] != src[ i ] ) {
                     return false;
                 }
             }
             return true;
         }
-        template < size_t SrcN >
+        template < std::size_t SrcN >
         constexpr auto compare( const basic_const_string< T, SrcN >& src ) const noexcept
         {
             if ( SrcN != N ) {
                 return false;
             }
-            for ( const auto i : std::ranges::iota_view{ decltype( N ){ 0 }, N } ) {
-                if ( data_[ i ] != src.data_[ i ] ) {
+            for ( decltype( N ) i{ 0 }; i < N; ++i ) {
+                if ( data_[ i ] != src[ i ] ) {
                     return false;
                 }
             }
             return true;
         }
-        constexpr auto operator==( const T* const src ) const
+        constexpr auto operator==( const std::basic_string_view< T > src ) const
         {
             return compare( src );
         }
-        template < size_t SrcN >
+        template < std::size_t SrcN >
         constexpr auto operator==( const T ( &src )[ SrcN ] ) const noexcept
         {
             return compare( src );
         }
-        template < size_t SrcN >
+        template < std::size_t SrcN >
         constexpr auto operator==( const basic_const_string< T, SrcN >& src ) const noexcept
         {
             return compare( src );
@@ -130,12 +122,12 @@ namespace cpp_utils
         {
             return !compare( src );
         }
-        template < size_t SrcN >
+        template < std::size_t SrcN >
         constexpr auto operator!=( const T ( &src )[ SrcN ] ) const noexcept
         {
             return !compare( src );
         }
-        template < size_t SrcN >
+        template < std::size_t SrcN >
         constexpr auto operator!=( const basic_const_string< T, SrcN >& src ) const noexcept
         {
             return !compare( src );
@@ -153,17 +145,17 @@ namespace cpp_utils
         consteval basic_const_string( basic_const_string< T, N >&& ) noexcept = delete;
         ~basic_const_string() noexcept                                        = default;
     };
-    template < size_t N >
+    template < std::size_t N >
     using const_string = basic_const_string< char, N >;
-    template < size_t N >
+    template < std::size_t N >
     using const_wstring = basic_const_string< wchar_t, N >;
-    template < size_t N >
+    template < std::size_t N >
     using const_u8string = basic_const_string< char8_t, N >;
-    template < size_t N >
+    template < std::size_t N >
     using const_u16string = basic_const_string< char16_t, N >;
-    template < size_t N >
+    template < std::size_t N >
     using const_u32string = basic_const_string< char32_t, N >;
-    template < auto C, size_t N >
+    template < auto C, std::size_t N >
         requires character< decltype( C ) >
     inline consteval auto make_repeated_const_string() noexcept
     {
