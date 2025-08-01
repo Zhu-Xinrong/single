@@ -86,7 +86,7 @@ auto set_click_num( ui_func_args args ) noexcept
     while ( true ) {
         std::cin >> click;
         clear_cin_buffer();
-        if ( click > 0 ) [[unlikely]] {
+        if ( click > 0 ) [[likely]] {
             break;
         }
         std::print( "数据必须大于 0, 请重新输入: " );
