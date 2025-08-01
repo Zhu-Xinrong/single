@@ -153,6 +153,8 @@ auto main() -> int
     cpp_utils::set_console_size( current_window_handle, std_output_handle, 50, 25 );
     cpp_utils::fix_window_size( current_window_handle, true );
     std::ios::sync_with_stdio( false );
+    std::cin.tie( nullptr );
+    std::cout.tie( nullptr );
     cpp_utils::console_ui ui{ std_input_handle, std_output_handle };
     ui.add_back(
         "                   Auto Clicker\n\n\n"
