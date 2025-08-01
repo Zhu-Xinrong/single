@@ -33,7 +33,7 @@ class auto_click final
     }
     auto run() noexcept
     {
-        for ( decltype( click ) _{}; _ < click_; ++_ ) {
+        for ( decltype( click_ ) _{}; _ < click_; ++_ ) {
             execute_();
             std::this_thread::sleep_for( sleep_time_ );
         }
@@ -52,22 +52,22 @@ std::chrono::milliseconds sleep_time{};
 int click{};
 char button[ 2 ]{};
 unsigned short config_cnt{};
-auto clear_cin_buffer() noexcept
+auto clear_istream_buffer( std::istream& stream ) noexcept
 {
-    std::cin.clear();
-    std::cin.ignore();
+    stream.clear();
+    stream.ignore();
 }
 auto execute( ui_func_args args ) noexcept
 {
-    constexpr std::chrono::seconds one_seconds{ 1 };
     args.parent_ui.set_constraints( true, true );
     auto_click clicker;
     clicker.set( button[ 0 ], click, sleep_time );
     for ( const auto i : std::ranges::iota_view{ 0, 5 } ) {
+        using namespace std::chrono_literals;
         std::print( " (i) 请在 {} 秒内将鼠标移动到指定位置.\r", 5 - i );
-        std::this_thread::sleep_for( one_seconds );
+        std::this_thread::sleep_for( 1s );
     }
-    cpp_utils::clear_console( std_output_handle );
+    cpp_utils::clear_console_fast( std_output_handle );
     std::print( " -> 开始执行." );
     clicker.run();
     return func_back;
@@ -85,7 +85,7 @@ auto set_click_num( ui_func_args args ) noexcept
     std::print( "请输入点击次数: " );
     while ( true ) {
         std::cin >> click;
-        clear_cin_buffer();
+        clear_istream_buffer( std::cin );
         if ( click > 0 ) [[likely]] {
             break;
         }
@@ -99,11 +99,11 @@ auto set_sleep_time( ui_func_args args ) noexcept
     args.parent_ui.set_constraints( false, true );
     std::print( "请输入间隔时间 (单位: 毫秒): " );
     while ( true ) {
-        int64_t tmp;
-        std::cin >> tmp;
-        clear_cin_buffer();
-        if ( tmp > 0 ) [[unlikely]] {
-            sleep_time = std::chrono::milliseconds{ tmp };
+        int64_t input;
+        std::cin >> input;
+        clear_istream_buffer( std::cin );
+        if ( input > 0 ) [[likely]] {
+            sleep_time = std::chrono::milliseconds{ input };
             break;
         }
         std::print( "数据必须大于 0, 请重新输入: " );
@@ -118,7 +118,7 @@ auto set_button( ui_func_args args ) noexcept
     bool is_ok{ false };
     while ( !is_ok ) {
         std::cin >> button;
-        clear_cin_buffer();
+        clear_istream_buffer( std::cin );
         switch ( button[ 0 ] ) {
             case 'L' :
             case 'l' :
