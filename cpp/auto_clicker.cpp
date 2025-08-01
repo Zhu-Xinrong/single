@@ -33,7 +33,7 @@ class auto_click final
     }
     auto run() noexcept
     {
-        for ( [[maybe_unused]] const auto _ : std::ranges::iota_view{ decltype( click_ ){ 0 }, click_ } ) {
+        for ( decltype( click ) _{}; _ < click_; ++_ ) {
             execute_();
             std::this_thread::sleep_for( sleep_time_ );
         }
