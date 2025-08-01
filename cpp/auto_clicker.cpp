@@ -25,11 +25,11 @@ class auto_click final
         mouse_event( flag, 0, 0, 0, 0 );
     }
   public:
-    auto set( const char _button, const int _click, const std::chrono::milliseconds _sleep_time ) noexcept
+    auto set( const char button, const int click, const std::chrono::milliseconds sleep_time ) noexcept
     {
-        button_     = _button;
-        click_      = _click;
-        sleep_time_ = _sleep_time;
+        button_     = button;
+        click_      = click;
+        sleep_time_ = sleep_time;
     }
     auto run() noexcept
     {
