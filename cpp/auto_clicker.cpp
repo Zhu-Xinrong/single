@@ -48,7 +48,6 @@ class auto_click final
 const auto current_window_handle{ GetConsoleWindow() };
 const auto std_input_handle{ GetStdHandle( STD_INPUT_HANDLE ) };
 const auto std_output_handle{ GetStdHandle( STD_OUTPUT_HANDLE ) };
-auto_click clicker;
 std::chrono::milliseconds sleep_time{};
 int click{};
 char button[ 2 ]{};
@@ -62,6 +61,7 @@ auto execute( ui_func_args args ) noexcept
 {
     constexpr std::chrono::seconds one_seconds{ 1 };
     args.parent_ui.set_constraints( true, true );
+    auto_click clicker;
     clicker.set( button[ 0 ], click, sleep_time );
     for ( const auto i : std::ranges::iota_view{ 0, 5 } ) {
         std::print( " (i) 请在 {} 秒内将鼠标移动到指定位置.\r", 5 - i );
