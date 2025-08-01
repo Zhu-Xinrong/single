@@ -122,7 +122,7 @@ namespace cpp_utils
             GetConsoleScreenBufferInfo( std_output_handle_, &console_data );
             return console_data.dwCursorPosition;
         }
-        static auto set_cursor_( const COORD cursor_position ) noexcept
+        static auto set_cursor( const COORD cursor_position ) noexcept
         {
             SetConsoleCursorPosition( std_output_handle_, cursor_position );
         }
@@ -132,25 +132,12 @@ namespace cpp_utils
             INPUT_RECORD record;
             DWORD reg;
             while ( true ) {
-                std::this_thread::sleep_for( 50ms );
+                std::this_thread::sleep_for( 20ms );
                 ReadConsoleInputW( std_input_handle_, &record, 1, &reg );
                 if ( record.EventType == MOUSE_EVENT && ( is_move || record.Event.MouseEvent.dwEventFlags != mouse::move ) ) {
                     return record.Event.MouseEvent;
                 }
             }
-        }
-        static auto get_console_size_() noexcept
-        {
-            CONSOLE_SCREEN_BUFFER_INFO console_data;
-            GetConsoleScreenBufferInfo( std_output_handle_, &console_data );
-            return console_data.dwSize;
-        }
-        static auto cls_()
-        {
-            set_cursor_( COORD{ 0, 0 } );
-            const auto [ width, height ]{ get_console_size_() };
-            std::print( "{}", std::string( static_cast< unsigned int >( width ) * static_cast< unsigned int >( height ), ' ' ) );
-            set_cursor_( COORD{ 0, 0 } );
         }
         static auto write_( const std::string& text, const bool is_endl = false )
         {
@@ -161,15 +148,16 @@ namespace cpp_utils
         }
         static auto rewrite_( const COORD cursor_position, const std::string& text )
         {
-            set_cursor_( COORD{ 0, cursor_position.Y } );
-            write_( std::string( cursor_position.X, ' ' ) );
-            set_cursor_( COORD{ 0, cursor_position.Y } );
+            const auto [ console_width, console_height ]{ cursor_position };
+            SetConsoleCursorPosition( std_output_handle_, { 0, console_height } );
+            write_( std::string( console_width, ' ' ) );
+            SetConsoleCursorPosition( std_output_handle_, { 0, console_height } );
             write_( text );
-            set_cursor_( COORD{ 0, cursor_position.Y } );
+            SetConsoleCursorPosition( std_output_handle_, { 0, console_height } );
         }
         auto init_pos_()
         {
-            cls_();
+            clear_console_fast( std_output_handle_ );
             const auto back_ptr{ &lines_.back() };
             for ( auto& line : lines_ ) {
                 line.position = get_cursor_();
@@ -177,7 +165,7 @@ namespace cpp_utils
                 write_( line.text, &line != back_ptr );
             }
         }
-        auto refresh_( const COORD& hang_position )
+        auto refresh_( const COORD hang_position )
         {
             for ( auto& line : lines_ ) {
                 if ( line == hang_position && line.last_attrs != line.intensity_attrs ) {
@@ -190,45 +178,45 @@ namespace cpp_utils
                 }
             }
         }
-        auto invoke_func_( const MOUSE_EVENT_RECORD& current_event )
+        auto invoke_func_( const MOUSE_EVENT_RECORD current_event )
         {
-            auto is_exit{ func_back };
-            for ( auto i{ 0uz }; i < lines_.size(); ++i ) {
-                auto& line{ lines_[ i ] };
-                if ( line != current_event.dwMousePosition ) {
-                    continue;
-                }
-                bool is_text{ false };
-                line.func.visit( [ & ]( const auto& func )
-                {
-                    if ( func == nullptr ) {
-                        is_text = true;
-                    }
-                } );
-                if ( is_text == true ) {
+            line_node_* target{ nullptr };
+            auto index{ 0uz };
+            for ( auto& line : lines_ ) {
+                if ( line == current_event.dwMousePosition ) {
+                    target = &line;
                     break;
                 }
-                cls_();
-                line.set_attrs( line.default_attrs );
-                show_cursor_( FALSE );
-                set_console_attrs_( console_attrs_selection_::locked );
-                line.func.visit( [ & ]( auto& func )
-                {
-                    using func_t = std::decay_t< decltype( func ) >;
-                    if constexpr ( std::is_same_v< func_t, std::function< func_action() > > ) {
-                        is_exit = func();
-                    } else if constexpr ( std::is_same_v< func_t, std::function< func_action( func_args ) > > ) {
-                        is_exit = func( func_args{ *this, i, current_event } );
-                    } else {
-                        static_assert( false, "unknown callback!" );
-                    }
-                } );
-                show_cursor_( FALSE );
-                set_console_attrs_( console_attrs_selection_::locked );
-                init_pos_();
-                break;
+                ++index;
             }
-            return is_exit;
+            if ( target == nullptr ) {
+                return func_back;
+            }
+            auto is_text{ false };
+            target->func.visit( [ & ]( const auto& func ) { is_text = ( func == nullptr ); } );
+            if ( is_text ) {
+                return func_back;
+            }
+            clear_console_fast( std_output_handle_ );
+            target->set_attrs( target->default_attrs );
+            show_cursor_( FALSE );
+            set_console_attrs_( console_attrs_selection_::locked );
+            func_action value;
+            target->func.visit( [ & ]( auto& func )
+            {
+                using func_t = std::decay_t< decltype( func ) >;
+                if constexpr ( std::is_same_v< func_t, std::function< func_action() > > ) {
+                    value = func();
+                } else if constexpr ( std::is_same_v< func_t, std::function< func_action( func_args ) > > ) {
+                    value = func( func_args{ *this, index, current_event } );
+                } else {
+                    static_assert( false, "unknown callback!" );
+                }
+            } );
+            show_cursor_( FALSE );
+            set_console_attrs_( console_attrs_selection_::locked );
+            init_pos_();
+            return value;
         }
       public:
         constexpr auto empty() const noexcept
@@ -374,7 +362,7 @@ namespace cpp_utils
                     }
                 }
             }
-            cls_();
+            clear_console_fast( std_output_handle_ );
             return *this;
         }
         auto& set_constraints( const bool is_hide_cursor, const bool is_lock_text ) noexcept
