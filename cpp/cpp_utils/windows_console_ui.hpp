@@ -48,7 +48,7 @@ namespace cpp_utils
       private:
         static inline HANDLE std_input_handle_;
         static inline HANDLE std_output_handle_;
-        enum class console_attrs_selection_ : bool
+        enum class console_attrs_selection_ : char
         {
             normal,
             locked
@@ -105,15 +105,15 @@ namespace cpp_utils
                 case console_attrs_selection_::normal :
                     attrs |= ENABLE_QUICK_EDIT_MODE;
                     attrs |= ENABLE_INSERT_MODE;
-                    attrs |= ENABLE_MOUSE_INPUT;
                     break;
                 case console_attrs_selection_::locked :
                     attrs &= ~ENABLE_QUICK_EDIT_MODE;
                     attrs &= ~ENABLE_INSERT_MODE;
-                    attrs |= ENABLE_MOUSE_INPUT;
                     break;
                 default : std::unreachable();
             }
+            attrs |= ENABLE_MOUSE_INPUT;
+            attrs |= ENABLE_LINE_INPUT;
             SetConsoleMode( std_input_handle_, attrs );
         }
         static auto get_cursor_() noexcept
@@ -157,9 +157,8 @@ namespace cpp_utils
         }
         auto init_pos_()
         {
-            clear_console_fast( std_output_handle_ );
-            const auto back_ptr{ &lines_.back() };
-            for ( auto& line : lines_ ) {
+            clear_console_traditional( std_output_handle_ );
+            for ( const auto back_ptr{ &lines_.back() }; auto& line : lines_ ) {
                 line.position = get_cursor_();
                 line.set_attrs( line.default_attrs );
                 write_( line.text, &line != back_ptr );
@@ -192,27 +191,23 @@ namespace cpp_utils
             if ( target == nullptr ) {
                 return func_back;
             }
-            auto is_text{ false };
-            target->func.visit( [ & ]( const auto& func ) { is_text = ( func == nullptr ); } );
-            if ( is_text ) {
+            if ( target->func.visit< bool >( []( const auto& func ) static { return func == nullptr; } ) ) {
                 return func_back;
             }
-            clear_console_fast( std_output_handle_ );
+            clear_console_traditional( std_output_handle_ );
             target->set_attrs( target->default_attrs );
             show_cursor_( FALSE );
             set_console_attrs_( console_attrs_selection_::locked );
-            func_action value;
-            target->func.visit( [ & ]( auto& func )
+            const auto value{ target->func.visit< func_action >( [ & ]< typename F >( F& func )
             {
-                using func_t = std::decay_t< decltype( func ) >;
-                if constexpr ( std::is_same_v< func_t, std::function< func_action() > > ) {
-                    value = func();
-                } else if constexpr ( std::is_same_v< func_t, std::function< func_action( func_args ) > > ) {
-                    value = func( func_args{ *this, index, current_event } );
+                if constexpr ( std::is_same_v< F, std::function< func_action() > > ) {
+                    return func();
+                } else if constexpr ( std::is_same_v< F, std::function< func_action( func_args ) > > ) {
+                    return func( func_args{ *this, index, current_event } );
                 } else {
                     static_assert( false, "unknown callback!" );
                 }
-            } );
+            } ) };
             show_cursor_( FALSE );
             set_console_attrs_( console_attrs_selection_::locked );
             init_pos_();
@@ -258,9 +253,9 @@ namespace cpp_utils
           const WORD intensity_attrs = console_text::foreground_green | console_text::foreground_blue,
           const WORD default_attrs   = console_text::foreground_white )
         {
-            bool is_func{ false };
-            func.visit( [ & ]( const auto& func ) { is_func = ( func != nullptr ); } );
-            lines_.emplace_front( text, func, default_attrs, is_func ? intensity_attrs : default_attrs );
+            lines_.emplace_front(
+              text, func, default_attrs,
+              func.visit< bool >( []( const auto& func ) static { return func != nullptr; } ) ? intensity_attrs : default_attrs );
             return *this;
         }
         auto& add_back(
@@ -268,9 +263,9 @@ namespace cpp_utils
           const WORD intensity_attrs = console_text::foreground_blue | console_text::foreground_green,
           const WORD default_attrs   = console_text::foreground_white )
         {
-            bool is_func{ false };
-            func.visit( [ & ]( const auto& func ) { is_func = ( func != nullptr ); } );
-            lines_.emplace_back( text, func, default_attrs, is_func ? intensity_attrs : default_attrs );
+            lines_.emplace_back(
+              text, func, default_attrs,
+              func.visit< bool >( []( const auto& func ) static { return func != nullptr; } ) ? intensity_attrs : default_attrs );
             return *this;
         }
         auto& insert(
@@ -278,9 +273,9 @@ namespace cpp_utils
           const WORD intensity_attrs = console_text::foreground_green | console_text::foreground_blue,
           const WORD default_attrs   = console_text::foreground_white )
         {
-            bool is_func{ false };
-            func.visit( [ & ]( const auto& func ) { is_func = ( func != nullptr ); } );
-            lines_.emplace( lines_.cbegin() + index, text, func, default_attrs, is_func ? intensity_attrs : default_attrs );
+            lines_.emplace(
+              lines_.cbegin() + index, text, func, default_attrs,
+              func.visit< bool >( []( const auto& func ) static { return func != nullptr; } ) ? intensity_attrs : default_attrs );
             return *this;
         }
         auto& edit_text( const std::size_t index, const std::string_view text )
@@ -362,7 +357,7 @@ namespace cpp_utils
                     }
                 }
             }
-            clear_console_fast( std_output_handle_ );
+            clear_console_traditional( std_output_handle_ );
             return *this;
         }
         auto& set_constraints( const bool is_hide_cursor, const bool is_lock_text ) noexcept
