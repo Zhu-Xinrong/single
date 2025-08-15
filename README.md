@@ -17,7 +17,7 @@
 > 对于 [cpp](cpp) 下的任意 `.cpp` 文件, 推荐使用以下编译命令:
 > 
 > ```bash
-> g++ cpp/auto_clicker.cpp -Wall -Wextra -Weffc++ -Wpedantic -O3 -s -static -flto=auto -fno-rtti -fno-exceptions -ffunction-sections -fdata-sections "-Wl,--gc-sections" -std=gnu++26 -fexec-charset=gbk
+> g++ cpp/文件名 -Wall -Wextra -Weffc++ -Wpedantic -O3 -s -static -flto=auto -fno-rtti -fno-exceptions -ffunction-sections -fdata-sections "-Wl,--gc-sections" -std=gnu++26 -fexec-charset=gbk
 > ```
 
 # 该库的其他贡献者
