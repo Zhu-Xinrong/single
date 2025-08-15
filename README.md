@@ -13,7 +13,7 @@
 |     连点器     |          [cpp/auto_clicker.cpp](cpp/auto_clicker.cpp)          |   C++    | ✅ 正常维护 | [MaxLHy0424 (Mingxu Ye)](https://github.com/MaxLHy0424 "MaxLHy0424 (Mingxu Ye) 的 GitHub 主页") |
 
 > [!NOTE]
-> 连点器 ([cpp/auto_clicker.cpp](cpp/auto_clicker.cpp)) 推荐的编译命令:
+> 对于 [cpp](cpp) 下的任意 `.cpp` 文件, 推荐使用以下编译命令:
 > ```bash
 > g++ cpp/auto_clicker.cpp -Wall -Wextra -Weffc++ -Wpedantic -O3 -s -static -flto=auto -fno-rtti -fno-exceptions -ffunction-sections -fdata-sections "-Wl,--gc-sections" -std=gnu++26 -fexec-charset=gbk
 > ```
