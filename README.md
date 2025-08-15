@@ -1,4 +1,5 @@
 # 仓库简介
+
 本人写的小工具, 遵循 MIT 开源协议.
 
 # 内容一览
@@ -14,6 +15,7 @@
 
 > [!NOTE]
 > 对于 [cpp](cpp) 下的任意 `.cpp` 文件, 推荐使用以下编译命令:
+> 
 > ```bash
 > g++ cpp/auto_clicker.cpp -Wall -Wextra -Weffc++ -Wpedantic -O3 -s -static -flto=auto -fno-rtti -fno-exceptions -ffunction-sections -fdata-sections "-Wl,--gc-sections" -std=gnu++26 -fexec-charset=gbk
 > ```
@@ -25,5 +27,7 @@
 ---
 
 <div align="center">
+
 更新于 2025/08/01 星期五 闰六月初八
+
 </div>
