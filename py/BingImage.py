@@ -246,7 +246,8 @@ class BingImageApp:
             file_path = filedialog.asksaveasfilename(initialdir=folder_path, initialfile=default_filename, defaultextension='.jpg', filetypes=[('JPEG图片', '*.jpg')])
             
             if file_path:
-                open(file_path, 'wb').write(self.original_img_data)
+                with open(file_path, 'wb') as file:
+                    file.write(self.original_img_data)
                 messagebox.showinfo('保存成功', f'图片已保存到 {file_path}。')
                 self.status_var.set(f'图片已保存到: {file_path}。')
         except Exception as e:
@@ -295,7 +296,8 @@ def set_wallpaper_mode():
         img_data = requests.get(img_url).content
         
         # 保存图片
-        open(file_path, 'wb').write(img_data)
+        with open(file_path, 'wb') as f:
+            f.write(img_data)
         
         # 设置壁纸
         ctypes.windll.user32.SystemParametersInfoW(20, 0, file_path, 3)
