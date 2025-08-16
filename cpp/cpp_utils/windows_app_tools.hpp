@@ -1,24 +1,25 @@
 #pragma once
 #if defined( _WIN32 ) || defined( _WIN64 )
-# include "windows_definations.hpp"
+# include "windows_definitions.hpp"
 # if true
 #  include <tlhelp32.h>
 # endif
 #endif
+#include <bit>
 #include <chrono>
 #include <concepts>
 #include <functional>
 #include <memory>
+#include <numeric>
 #include <print>
 #include <string>
 #include <thread>
 #include <type_traits>
 #include <utility>
-#include "type_tools.hpp"
 namespace cpp_utils
 {
 #if defined( _WIN32 ) || defined( _WIN64 )
-    namespace details__
+    namespace details
     {
         template < UINT Charset >
         inline auto to_wstring( const char* const str ) noexcept
@@ -46,7 +47,7 @@ namespace cpp_utils
             DWORD bytes_needed{ 0 };
             if ( !QueryServiceConfigW( service, nullptr, 0, &bytes_needed ) && GetLastError() == ERROR_INSUFFICIENT_BUFFER ) {
                 const auto buffer{ std::make_unique< BYTE[] >( bytes_needed ) };
-                const auto config{ reinterpret_cast< LPQUERY_SERVICE_CONFIGW >( buffer.get() ) };
+                const auto config{ std::bit_cast< LPQUERY_SERVICE_CONFIGW >( buffer.get() ) };
                 if ( QueryServiceConfigW( service, config, bytes_needed, &bytes_needed ) ) {
                     if ( config->lpDependencies != nullptr && *config->lpDependencies != '\0' ) {
                         auto dependency{ config->lpDependencies };
@@ -69,7 +70,7 @@ namespace cpp_utils
                     if ( status.dwCurrentState != SERVICE_STOP_PENDING ) {
                         break;
                     }
-                    std::this_thread::sleep_for( 10ms );
+                    std::this_thread::sleep_for( 5ms );
                 }
                 if ( status.dwCurrentState != SERVICE_STOPPED ) {
                     result = ERROR_SERVICE_REQUEST_TIMEOUT;
@@ -85,7 +86,7 @@ namespace cpp_utils
             DWORD bytes_needed;
             if ( QueryServiceConfigW( service, nullptr, 0, &bytes_needed ) || GetLastError() == ERROR_INSUFFICIENT_BUFFER ) {
                 const auto buffer{ std::make_unique< BYTE[] >( bytes_needed ) };
-                const auto config{ reinterpret_cast< LPQUERY_SERVICE_CONFIGW >( buffer.get() ) };
+                const auto config{ std::bit_cast< LPQUERY_SERVICE_CONFIGW >( buffer.get() ) };
                 if ( QueryServiceConfigW( service, config, bytes_needed, &bytes_needed ) ) {
                     if ( config->lpDependencies && *config->lpDependencies ) {
                         wchar_t* context{ nullptr };
@@ -121,7 +122,7 @@ namespace cpp_utils
     template < UINT Charset >
     inline auto kill_process_by_name( const char* const process_name ) noexcept
     {
-        const auto w_name{ details__::to_wstring< Charset >( process_name ) };
+        const auto w_name{ details::to_wstring< Charset >( process_name ) };
         if ( w_name.empty() ) {
             return static_cast< DWORD >( ERROR_INVALID_PARAMETER );
         }
@@ -160,8 +161,8 @@ namespace cpp_utils
       const DWORD data_size ) noexcept
     {
         using namespace std::string_literals;
-        const auto w_sub_key{ details__::to_wstring< Charset >( sub_key ) };
-        const auto w_value_name{ value_name ? details__::to_wstring< Charset >( value_name ) : L""s };
+        const auto w_sub_key{ details::to_wstring< Charset >( sub_key ) };
+        const auto w_value_name{ value_name ? details::to_wstring< Charset >( value_name ) : L""s };
         HKEY key_handle;
         auto result{ RegCreateKeyExW(
           main_key, w_sub_key.c_str(), 0, nullptr, REG_OPTION_NON_VOLATILE, KEY_WRITE, nullptr, &key_handle, nullptr ) };
@@ -176,8 +177,8 @@ namespace cpp_utils
     inline auto delete_registry_key( const HKEY main_key, const char* const sub_key, const char* const value_name ) noexcept
     {
         using namespace std::string_literals;
-        const auto w_sub_key{ details__::to_wstring< Charset >( sub_key ) };
-        const auto w_value_name{ value_name ? details__::to_wstring< Charset >( value_name ) : L""s };
+        const auto w_sub_key{ details::to_wstring< Charset >( sub_key ) };
+        const auto w_value_name{ value_name ? details::to_wstring< Charset >( value_name ) : L""s };
         HKEY key_handle;
         auto result{ RegOpenKeyExW( main_key, w_sub_key.c_str(), 0, KEY_WRITE, &key_handle ) };
         if ( result != ERROR_SUCCESS ) {
@@ -190,12 +191,12 @@ namespace cpp_utils
     template < UINT Charset >
     inline auto delete_registry_tree( const HKEY main_key, const char* const sub_key ) noexcept
     {
-        return RegDeleteTreeW( main_key, details__::to_wstring< Charset >( sub_key ).c_str() );
+        return RegDeleteTreeW( main_key, details::to_wstring< Charset >( sub_key ).c_str() );
     }
     template < UINT Charset >
     inline auto set_service_status( const char* const service_name, const DWORD status_type ) noexcept
     {
-        const auto w_name{ details__::to_wstring< Charset >( service_name ) };
+        const auto w_name{ details::to_wstring< Charset >( service_name ) };
         if ( w_name.empty() ) {
             return static_cast< DWORD >( ERROR_INVALID_PARAMETER );
         }
@@ -222,7 +223,7 @@ namespace cpp_utils
     template < UINT Charset >
     inline auto stop_service_with_dependencies( const char* const service_name ) noexcept
     {
-        const auto w_name{ details__::to_wstring< Charset >( service_name ) };
+        const auto w_name{ details::to_wstring< Charset >( service_name ) };
         if ( w_name.empty() ) {
             return static_cast< DWORD >( ERROR_INVALID_PARAMETER );
         }
@@ -234,7 +235,7 @@ namespace cpp_utils
           OpenServiceW( scm, w_name.c_str(), SERVICE_STOP | SERVICE_QUERY_STATUS | SERVICE_ENUMERATE_DEPENDENTS ) };
         DWORD result{ ERROR_SUCCESS };
         if ( service ) {
-            result = details__::stop_service_and_dependencies( scm, service );
+            result = details::stop_service_and_dependencies( scm, service );
             CloseServiceHandle( service );
         } else {
             result = GetLastError();
@@ -245,7 +246,7 @@ namespace cpp_utils
     template < UINT Charset >
     inline auto start_service_with_dependencies( const char* const service_name ) noexcept
     {
-        const auto w_name{ details__::to_wstring< Charset >( service_name ) };
+        const auto w_name{ details::to_wstring< Charset >( service_name ) };
         if ( w_name.empty() ) {
             return static_cast< DWORD >( ERROR_INVALID_PARAMETER );
         }
@@ -256,13 +257,30 @@ namespace cpp_utils
         const auto service{ OpenServiceW( scm, w_name.c_str(), SERVICE_START | SERVICE_QUERY_STATUS | SERVICE_QUERY_CONFIG ) };
         DWORD result{ ERROR_SUCCESS };
         if ( service != nullptr ) {
-            result = details__::start_service_and_dependencies( scm, service );
+            result = details::start_service_and_dependencies( scm, service );
             CloseServiceHandle( service );
         } else {
             result = GetLastError();
         }
         CloseServiceHandle( scm );
         return result;
+    }
+    inline auto press_any_key_to_continue( const HANDLE std_input_handle ) noexcept
+    {
+        DWORD mode;
+        GetConsoleMode( std_input_handle, &mode );
+        SetConsoleMode( std_input_handle, ENABLE_EXTENDED_FLAGS | ( mode & ~ENABLE_QUICK_EDIT_MODE ) );
+        FlushConsoleInputBuffer( std_input_handle );
+        INPUT_RECORD record;
+        DWORD events;
+        do {
+            ReadConsoleInputW( std_input_handle, &record, 1, &events );
+        } while ( record.EventType != KEY_EVENT || !record.Event.KeyEvent.bKeyDown );
+        SetConsoleMode( std_input_handle, mode );
+    }
+    inline auto press_any_key_to_continue() noexcept
+    {
+        press_any_key_to_continue( GetStdHandle( STD_INPUT_HANDLE ) );
     }
     inline auto is_run_as_admin() noexcept
     {
@@ -278,14 +296,14 @@ namespace cpp_utils
         }
         return static_cast< bool >( is_admin );
     }
-    inline auto relaunch( const int exit_code ) noexcept
+    [[noreturn]] inline auto relaunch( const int exit_code ) noexcept
     {
         std::array< wchar_t, MAX_PATH > file_path;
         GetModuleFileNameW( nullptr, file_path.data(), MAX_PATH );
         ShellExecuteW( nullptr, L"open", file_path.data(), nullptr, nullptr, SW_SHOWNORMAL );
         std::exit( exit_code );
     }
-    inline auto relaunch_as_admin( const int exit_code ) noexcept
+    [[noreturn]] inline auto relaunch_as_admin( const int exit_code ) noexcept
     {
         std::array< wchar_t, MAX_PATH > file_path;
         GetModuleFileNameW( nullptr, file_path.data(), MAX_PATH );
@@ -326,20 +344,15 @@ namespace cpp_utils
     {
         set_window_state( get_current_window_handle(), state );
     }
-    inline auto keep_window_top( const HWND window_handle, const DWORD thread_id, const DWORD window_thread_process_id ) noexcept
+    inline auto force_show_window( const HWND window_handle, const DWORD thread_id, const DWORD window_thread_process_id ) noexcept
     {
         AttachThreadInput( thread_id, window_thread_process_id, TRUE );
         SetForegroundWindow( window_handle );
         SetWindowPos( window_handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE );
         AttachThreadInput( thread_id, window_thread_process_id, FALSE );
     }
-    inline auto keep_current_window_top() noexcept
-    {
-        auto window_handle{ get_current_window_handle() };
-        keep_window_top( window_handle, GetCurrentThreadId(), GetWindowThreadProcessId( window_handle, nullptr ) );
-    }
     template < typename ChronoRep, typename ChronoPeriod >
-    inline auto loop_keep_window_top(
+    inline auto force_show_window_forever(
       const HWND window_handle, const DWORD thread_id, const DWORD window_thread_process_id,
       const std::chrono::duration< ChronoRep, ChronoPeriod > sleep_time )
     {
@@ -351,13 +364,13 @@ namespace cpp_utils
             std::this_thread::sleep_for( sleep_time );
         }
     }
-    template < typename ChronoRep, typename ChronoPeriod, typename F, typename... Args >
-        requires std::invocable< F, Args... >
-    inline auto loop_keep_window_top(
+    template < typename ChronoRep, typename ChronoPeriod, typename F >
+        requires std::invocable< F >
+    inline auto force_show_window_until_not(
       const HWND window_handle, const DWORD thread_id, const DWORD window_thread_process_id,
-      const std::chrono::duration< ChronoRep, ChronoPeriod > sleep_time, F&& condition_checker, Args&&... condition_checker_args )
+      const std::chrono::duration< ChronoRep, ChronoPeriod > sleep_time, F&& condition_checker )
     {
-        while ( condition_checker( std::forward< Args >( condition_checker_args )... ) ) {
+        while ( condition_checker() ) {
             AttachThreadInput( thread_id, window_thread_process_id, TRUE );
             SetForegroundWindow( window_handle );
             SetWindowPos( window_handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE );
@@ -365,29 +378,35 @@ namespace cpp_utils
             std::this_thread::sleep_for( sleep_time );
         }
     }
+    inline auto force_show_current_window() noexcept
+    {
+        auto window_handle{ get_current_window_handle() };
+        force_show_window( window_handle, GetCurrentThreadId(), GetWindowThreadProcessId( window_handle, nullptr ) );
+    }
     template < typename ChronoRep, typename ChronoPeriod >
-    inline auto loop_keep_current_window_top( const std::chrono::duration< ChronoRep, ChronoPeriod > sleep_time )
+    inline auto force_show_current_window_forever( const std::chrono::duration< ChronoRep, ChronoPeriod > sleep_time )
     {
         const auto window_handle{ get_current_window_handle() };
-        loop_keep_window_top( window_handle, GetCurrentThreadId(), GetWindowThreadProcessId( window_handle, nullptr ), sleep_time );
+        force_show_window_forever(
+          window_handle, GetCurrentThreadId(), GetWindowThreadProcessId( window_handle, nullptr ), sleep_time );
     }
-    template < typename ChronoRep, typename ChronoPeriod, typename F, typename... Args >
-        requires std::invocable< F, Args... >
-    inline auto loop_keep_current_window_top(
-      const std::chrono::duration< ChronoRep, ChronoPeriod > sleep_time, F&& condition_checker, Args&&... condition_checker_args )
+    template < typename ChronoRep, typename ChronoPeriod, typename F >
+        requires std::invocable< F >
+    inline auto
+      force_show_current_window_until_not( const std::chrono::duration< ChronoRep, ChronoPeriod > sleep_time, F&& condition_checker )
     {
         const auto window_handle{ get_current_window_handle() };
-        loop_keep_window_top(
+        force_show_window_until_not(
           window_handle, GetCurrentThreadId(), GetWindowThreadProcessId( window_handle, nullptr ), sleep_time,
-          std::forward< F >( condition_checker ), std::forward< Args >( condition_checker_args )... );
+          std::forward< F >( condition_checker ) );
     }
-    inline auto cancel_top_window( const HWND window_handle ) noexcept
+    inline auto cancel_force_show_window( const HWND window_handle ) noexcept
     {
         SetWindowPos( window_handle, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE );
     }
-    inline auto cancel_top_current_window() noexcept
+    inline auto cancel_force_show_current_window() noexcept
     {
-        cancel_top_window( get_current_window_handle() );
+        cancel_force_show_window( get_current_window_handle() );
     }
     inline auto ignore_current_console_exit_signal( const bool is_ignore ) noexcept
     {
@@ -404,39 +423,44 @@ namespace cpp_utils
     {
         enable_virtual_terminal_processing( GetStdHandle( STD_OUTPUT_HANDLE ), is_enable );
     }
-    inline auto clear_console( const HANDLE std_output_handle ) noexcept
+    inline auto clear_console_traditional( const HANDLE std_output_handle )
+    {
+        CONSOLE_SCREEN_BUFFER_INFO console_data;
+        GetConsoleScreenBufferInfo( std_output_handle, &console_data );
+        const auto [ x, y ]{ console_data.dwSize };
+        SetConsoleCursorPosition( std_output_handle, { 0, 0 } );
+        std::print( "{}", std::string( std::mul_sat< unsigned >( x, y ), ' ' ) );
+        SetConsoleCursorPosition( std_output_handle, { 0, 0 } );
+    }
+    inline auto clear_current_console_traditional()
+    {
+        clear_console_traditional( GetStdHandle( STD_OUTPUT_HANDLE ) );
+    }
+    inline auto clear_console_fast( const HANDLE std_output_handle ) noexcept
     {
         enable_virtual_terminal_processing( std_output_handle, true );
-        std::print( "\033[H\033[2J" );
+        std::print( "\x1b[2J\x1b[1;1H" );
     }
-    inline auto clear_current_console() noexcept
+    inline auto clear_current_console_fast() noexcept
     {
-        clear_console( GetStdHandle( STD_OUTPUT_HANDLE ) );
+        clear_console_fast( GetStdHandle( STD_OUTPUT_HANDLE ) );
     }
-    inline auto reset_console( const HANDLE std_output_handle ) noexcept
+    inline auto clear_console_full( const HANDLE std_output_handle ) noexcept
     {
-        enable_virtual_terminal_processing( std_output_handle, true );
-        std::print( "\033c" );
+        clear_console_fast( std_output_handle );
+        clear_console_traditional( std_output_handle );
     }
-    inline auto reset_current_console() noexcept
+    inline auto clear_current_console_full() noexcept
     {
-        reset_console( GetStdHandle( STD_OUTPUT_HANDLE ) );
+        clear_console_full( GetStdHandle( STD_OUTPUT_HANDLE ) );
     }
     inline auto set_current_console_title( const char* const title ) noexcept
     {
         SetConsoleTitleA( title );
     }
-    inline auto set_current_console_title( const std::string& title ) noexcept
-    {
-        SetConsoleTitleA( title.data() );
-    }
     inline auto set_current_console_title( const wchar_t* const title ) noexcept
     {
         SetConsoleTitleW( title );
-    }
-    inline auto set_current_console_title( const std::wstring& title ) noexcept
-    {
-        SetConsoleTitleW( title.data() );
     }
     inline auto set_current_console_charset( const UINT charset_id ) noexcept
     {
@@ -452,7 +476,7 @@ namespace cpp_utils
         SetConsoleWindowInfo( std_output_handle, TRUE, &wrt );
         SetConsoleScreenBufferSize( std_output_handle, { width, height } );
         SetConsoleWindowInfo( std_output_handle, TRUE, &wrt );
-        clear_console( std_output_handle );
+        clear_console_full( std_output_handle );
     }
     inline auto set_current_console_size( const SHORT width, const SHORT height ) noexcept
     {

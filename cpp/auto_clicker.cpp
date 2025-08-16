@@ -1,173 +1,125 @@
+#include <flat_map>
 #include <iostream>
-#include <limits> // 添加limits头文件
 #include "cpp_utils/windows_app_tools.hpp"
 #include "cpp_utils/windows_console_ui.hpp"
-
+using ui_func_args = cpp_utils::console_ui::func_args;
 constexpr auto func_back{ cpp_utils::console_ui::func_back };
 constexpr auto func_exit{ cpp_utils::console_ui::func_exit };
-using ui_func_args = cpp_utils::console_ui::func_args;
-
-class auto_click final
+enum class mouse_button
 {
-  private:
-    char button_{};
-    int click_{};
-    std::chrono::milliseconds sleep_time_{};
-    
-    auto execute_() noexcept
-    {
-        DWORD flag = MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP; // 默认左键
-        switch ( button_ ) {
-            case 'L' :
-            case 'l' : flag = MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP; break;
-            case 'M' :
-            case 'm' : flag = MOUSEEVENTF_MIDDLEDOWN | MOUSEEVENTF_MIDDLEUP; break;
-            case 'R' :
-            case 'r' : flag = MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_RIGHTUP; break;
-        }
-        mouse_event( flag, 0, 0, 0, 0 );
-    }
-    
-  public:
-    auto set( const char _button, const int _click, const std::chrono::milliseconds _sleep_time ) noexcept
-    {
-        button_     = _button;
-        click_      = _click;
-        sleep_time_ = _sleep_time;
-    }
-    
-    auto run() noexcept
-    {
-        for ( [[maybe_unused]] const auto _ : std::ranges::iota_view{ decltype( click_ ){ 0 }, click_ } ) {
-            execute_();
-            std::this_thread::sleep_for( sleep_time_ );
-        }
-    }
-    
-    auto operator=( const auto_click& ) noexcept -> auto_click& = default;
-    auto operator=( auto_click&& ) noexcept -> auto_click&      = default;
-    auto_click() noexcept                                       = default;
-    auto_click( const auto_click& ) noexcept                    = default;
-    auto_click( auto_click&& ) noexcept                         = default;
-    ~auto_click() noexcept                                      = default;
+    left,
+    mid,
+    right
 };
-
-const auto current_window_handle{ GetConsoleWindow() };
-const auto std_input_handle{ GetStdHandle( STD_INPUT_HANDLE ) };
-const auto std_output_handle{ GetStdHandle( STD_OUTPUT_HANDLE ) };
-auto_click clicker;
-std::chrono::milliseconds sleep_time{};
-int click{};
-char button{}; // 单字符变量
-unsigned short config_cnt{};
-
-// 改进的输入缓冲区清理函数
-auto clear_cin_buffer() noexcept
+auto click( const mouse_button button )
 {
-    std::cin.clear();
-    // 清除整行输入，确保后续输入不受影响
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    DWORD flag;
+    switch ( button ) {
+        case mouse_button::left : flag = MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP; break;
+        case mouse_button::mid : flag = MOUSEEVENTF_MIDDLEDOWN | MOUSEEVENTF_MIDDLEUP; break;
+        case mouse_button::right : flag = MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_RIGHTUP; break;
+        default : std::unreachable();
+    }
+    mouse_event( flag, 0, 0, 0, 0 );
 }
-
+auto clear_istream_buffer( std::istream& stream ) noexcept
+{
+    stream.clear();
+    stream.ignore();
+}
+const std::flat_map< char, mouse_button > mouse_key_map{
+  {'l', mouse_button::left },
+  {'m', mouse_button::mid  },
+  {'r', mouse_button::right}
+};
+std::chrono::milliseconds sleep_time{};
+mouse_button current_mouse_button;
+int click_times{};
+int config_cnt{};
 auto execute( ui_func_args args ) noexcept
 {
-    constexpr std::chrono::seconds one_seconds{ 1 };
-    args.parent_ui.set_limits( true, true );
-    clicker.set( button, click, sleep_time ); // 直接使用字符变量
-    for ( const auto i : std::ranges::iota_view{ 0, 5 } ) {
-        std::print( " (i) 请在 {} 秒内将鼠标移动到指定位置.\r", 5 - i );
-        std::this_thread::sleep_for( one_seconds );
+    args.parent_ui.set_constraints( true, true );
+    using namespace std::chrono_literals;
+    for ( auto i{ 5 }; i > 0; --i ) {
+        std::print( " (i) 请在 {} 秒内将鼠标移动到指定位置.\r", i );
+        std::this_thread::sleep_for( 1s );
     }
-    cpp_utils::clear_console( std_output_handle );
+    cpp_utils::clear_console_traditional( GetStdHandle( STD_OUTPUT_HANDLE ) );
     std::print( " -> 开始执行." );
-    clicker.run();
+    for ( auto _{ 0 }; _ < click_times; ++_ ) {
+        click( current_mouse_button );
+    }
     return func_back;
 }
-
-auto check( ui_func_args& args ) noexcept
+auto init_if_ok( const ui_func_args& args ) noexcept
 {
-    ++config_cnt;
-    if ( config_cnt == 3 ) {
+    if ( ++config_cnt == 3 ) {
         args.parent_ui.edit_text( 0, "                   Auto Clicker\n\n" ).add_back( " > 执行 ", execute );
     }
 }
-
-auto set_click_num( ui_func_args args ) noexcept
+auto set_click_times( ui_func_args args ) noexcept
 {
-    args.parent_ui.set_limits( false, true );
+    args.parent_ui.set_constraints( false, true );
     std::print( "请输入点击次数: " );
     while ( true ) {
-        std::cin >> click;
-        clear_cin_buffer();
-        if ( click > 0 ) [[unlikely]] {
+        std::cin >> click_times;
+        clear_istream_buffer( std::cin );
+        if ( click_times > 0 ) [[likely]] {
             break;
         }
-        std::print( "数据必须大于 0, 请重新输入: " );
+        std::print( "数据错误, 请重新输入: " );
     }
-    check( args );
+    init_if_ok( args );
     return func_back;
 }
-
 auto set_sleep_time( ui_func_args args ) noexcept
 {
-    args.parent_ui.set_limits( false, true );
+    args.parent_ui.set_constraints( false, true );
     std::print( "请输入间隔时间 (单位: 毫秒): " );
+    int64_t input;
     while ( true ) {
-        int64_t tmp;
-        std::cin >> tmp;
-        clear_cin_buffer();
-        if ( tmp > 0 ) [[unlikely]] {
-            sleep_time = std::chrono::milliseconds{ tmp };
+        std::cin >> input;
+        clear_istream_buffer( std::cin );
+        if ( input > 0 ) [[likely]] {
+            sleep_time = std::chrono::milliseconds{ input };
             break;
         }
-        std::print( "数据必须大于 0, 请重新输入: " );
+        std::print( "数据错误, 请重新输入: " );
     }
-    check( args );
+    init_if_ok( args );
     return func_back;
 }
-
 auto set_button( ui_func_args args ) noexcept
 {
-    args.parent_ui.set_limits( false, true );
+    args.parent_ui.set_constraints( false, true );
     std::print( "按下左键 (L), 中键 (M), 还是右键 (R)?\n请输入 (不区分大小写): " );
-    bool is_ok{ false };
-    
-    while ( !is_ok ) {
-        // 安全读取单个字符
-        std::cin >> button;
-        clear_cin_buffer();  // 清除输入行剩余内容
-        
-        switch ( button ) {
-            case 'L' :
-            case 'l' :
-            case 'M' :
-            case 'm' :
-            case 'R' :
-            case 'r' : 
-                is_ok = true; 
-                break;
-            default : 
-                std::print( "输入错误，请重新输入 (L/M/R): " );
+    std::string tmp;
+    while ( true ) {
+        std::cin >> tmp;
+        clear_istream_buffer( std::cin );
+        if ( tmp.size() == 1 && mouse_key_map.contains( tmp.front() | 32 ) ) {
+            current_mouse_button = mouse_key_map.at( tmp.front() | 32 );
+            break;
         }
+        std::print( "请输入错误, 请重新输入: " );
     }
-    
-    check( args );
+    init_if_ok( args );
     return func_back;
 }
-
 auto quit() noexcept
 {
     return func_exit;
 }
-
 auto relaunch_as_admin() noexcept
 {
     cpp_utils::relaunch_as_admin( EXIT_SUCCESS );
     return func_exit;
 }
-
 auto main() -> int
 {
+    const auto current_window_handle{ GetConsoleWindow() };
+    const auto std_input_handle{ GetStdHandle( STD_INPUT_HANDLE ) };
+    const auto std_output_handle{ GetStdHandle( STD_OUTPUT_HANDLE ) };
     cpp_utils::ignore_current_console_exit_signal( true );
     cpp_utils::enable_window_minimize_ctrl( current_window_handle, false );
     cpp_utils::enable_window_maximize_ctrl( current_window_handle, false );
@@ -177,25 +129,20 @@ auto main() -> int
     cpp_utils::set_current_console_title( "Auto Clicker" );
     cpp_utils::set_console_size( current_window_handle, std_output_handle, 50, 25 );
     cpp_utils::fix_window_size( current_window_handle, true );
-    std::ios::sync_with_stdio( false );
-    
     cpp_utils::console_ui ui{ std_input_handle, std_output_handle };
     ui.add_back(
         "                   Auto Clicker\n\n\n"
         " (i) 全部设置后即可执行.\n" )
       .add_back( " < 退出 ", quit, cpp_utils::console_text::foreground_red | cpp_utils::console_text::foreground_intensity );
-    
     if ( !cpp_utils::is_run_as_admin() ) {
         ui.add_back(
           " < 以管理员权限重启 ", relaunch_as_admin,
           cpp_utils::console_text::foreground_green | cpp_utils::console_text::foreground_intensity );
     }
-    
     ui.add_back( "" )
-      .add_back( " > 设置 点击次数 ", set_click_num )
+      .add_back( " > 设置 点击次数 ", set_click_times )
       .add_back( " > 设置 点击间隔时间 ", set_sleep_time )
       .add_back( " > 设置 点击键 ", set_button )
       .show();
-    
     return EXIT_SUCCESS;
 }
